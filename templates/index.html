@@ -15,7 +15,7 @@
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="LectorIA home">
+        <a class="brand" href="/" aria-label="LectorIA home" data-i18n-aria-label="homeLabel">
           <img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" class="brand-mark" />
           <span class="brand-name">LectorIA</span>
         </a>
@@ -161,6 +161,10 @@
       <footer class="site-footer">
         <div class="footer-brand"><img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" /><strong>LectorIA</strong></div>
         <p data-i18n="footerPrivacy">Documents are processed temporarily for analysis. Avoid uploading sensitive personal information.</p>
+        <details class="privacy-details">
+          <summary data-i18n="privacyDetailsTitle">Privacy and advertising</summary>
+          <p data-i18n="privacyDetails">PDFs are temporarily extracted and removed after processing. Document text is sent to Hugging Face Inference Providers to generate results. LectorIA does not retain documents. If ads are enabled, Google may use cookies or similar technologies; the publisher must configure Google's certified consent messaging where required. Avoid uploading sensitive information.</p>
+        </details>
         <div class="ad-unit ad-footer" data-ad-slot-name="footer" aria-label="Advertisement" data-i18n-aria-label="adLabel" hidden>
           <span class="ad-placeholder" data-i18n="adPlaceholder">Advertisement</span>
         </div>

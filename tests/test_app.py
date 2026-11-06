@@ -1,3 +1,5 @@
+import io
+import os
 import unittest
 from unittest.mock import patch
 
@@ -35,6 +37,38 @@ class FlaskRoutesTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["code"], "invalid_request")
+
+    def test_home_uses_accept_language_for_initial_document_language(self):
+        response = self.client.get("/", headers={"Accept-Language": "es"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'<html lang="es">', response.data)
+
+    def test_missing_publisher_id_does_not_create_ads_txt_in_production(self):
+        with patch.dict(
+            os.environ,
+            {
+                "VERCEL": "1",
+                "ADSENSE_PUBLISHER_ID": "",
+                "ADSENSE_SLOT_HERO": "",
+                "ADSENSE_SLOT_MIDDLE": "",
+                "ADSENSE_SLOT_SIDEBAR": "",
+                "ADSENSE_SLOT_FOOTER": "",
+            },
+        ):
+            response = self.client.get("/ads.txt")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_pdf_upload_rejects_empty_file_with_a_specific_error(self):
+        response = self.client.post(
+            "/api/upload-pdf",
+            data={"file": (io.BytesIO(b""), "empty.pdf")},
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["code"], "empty_file")
 
 
 if __name__ == "__main__":

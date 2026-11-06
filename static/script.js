@@ -1,7 +1,7 @@
 const translations = {
   en: {
     navSummary: 'Summary', navKeywords: 'Keywords', navQuestions: 'Ask questions',
-    navLabel: 'Document sections', workspaceLabel: 'Document analysis workspace',
+    homeLabel: 'LectorIA home', navLabel: 'Document sections', workspaceLabel: 'Document analysis workspace',
     adLabel: 'Advertisement', languageLabel: 'Interface language', eyebrow: 'Your thoughtful document reader',
     heroTitleFirst: 'Understand every', heroTitleSecond: 'document, faster.',
     heroDescription: 'Turn a PDF or pasted text into a grounded summary, meaningful keywords, topic insights, and answers you can trace back to the source.',
@@ -18,6 +18,8 @@ const translations = {
     askButton: 'Ask', metadataTitle: 'Document details', fileLabel: 'File',
     noDocument: 'No document', pagesLabel: 'Pages', sizeLabel: 'Size',
     footerPrivacy: 'Documents are processed temporarily for analysis. Avoid uploading sensitive personal information.',
+    privacyDetailsTitle: 'Privacy and advertising',
+    privacyDetails: "PDFs are temporarily extracted and removed after processing. Document text is sent to Hugging Face Inference Providers to generate results. LectorIA does not retain documents. If ads are enabled, Google may use cookies or similar technologies; the publisher must configure Google's certified consent messaging where required. Avoid uploading sensitive information.",
     footerMade: 'Made for clearer reading.', sourceCode: 'Open source', adPlaceholder: 'Advertisement',
     statusReadingPdf: 'Reading PDF...', statusPdfLoaded: 'PDF loaded', statusAnalyzing: 'Analyzing every section...',
     statusAnalyzed: 'Analysis complete', statusError: 'Analysis failed', statusNeedsAnalysis: 'Changes need analysis',
@@ -57,7 +59,7 @@ const translations = {
   },
   es: {
     navSummary: 'Resumen', navKeywords: 'Palabras clave', navQuestions: 'Preguntas',
-    navLabel: 'Secciones del documento', workspaceLabel: 'Área de análisis del documento',
+    homeLabel: 'Inicio de LectorIA', navLabel: 'Secciones del documento', workspaceLabel: 'Área de análisis del documento',
     adLabel: 'Publicidad', languageLabel: 'Idioma de la interfaz', eyebrow: 'Tu lector inteligente de documentos',
     heroTitleFirst: 'Comprende cada', heroTitleSecond: 'documento, más rápido.',
     heroDescription: 'Convierte un PDF o texto en un resumen fundamentado, conceptos clave, temas y respuestas vinculadas con la fuente.',
@@ -74,6 +76,8 @@ const translations = {
     askButton: 'Preguntar', metadataTitle: 'Detalles del documento', fileLabel: 'Archivo',
     noDocument: 'Sin documento', pagesLabel: 'Páginas', sizeLabel: 'Tamaño',
     footerPrivacy: 'Los documentos se procesan temporalmente para el análisis. Evita subir información personal sensible.',
+    privacyDetailsTitle: 'Privacidad y publicidad',
+    privacyDetails: 'Los PDF se extraen temporalmente y se eliminan al terminar el procesamiento. El texto se envía a Hugging Face Inference Providers para generar resultados. LectorIA no conserva los documentos. Si se habilitan anuncios, Google puede utilizar cookies o tecnologías similares; el propietario debe configurar los mensajes de consentimiento certificados de Google donde sea necesario. Evita subir información sensible.',
     footerMade: 'Hecho para leer con claridad.', sourceCode: 'Código abierto', adPlaceholder: 'Publicidad',
     statusReadingPdf: 'Leyendo el PDF...', statusPdfLoaded: 'PDF cargado', statusAnalyzing: 'Analizando todas las secciones...',
     statusAnalyzed: 'Análisis completado', statusError: 'El análisis falló', statusNeedsAnalysis: 'Hay cambios por analizar',
@@ -140,7 +144,6 @@ const languageSelect = document.getElementById('language-select');
 let locale = 'en';
 let currentDocumentText = '';
 let currentPages = null;
-let currentFileName = '';
 let currentFileSize = 0;
 let analyzedText = '';
 let analysisPromise = null;
@@ -241,7 +244,9 @@ const requestJson = async (url, options) => {
   try {
     data = await response.json();
   } catch {
-    throw new Error(errorText('provider_error'));
+    const error = new Error(errorText('provider_error'));
+    error.code = 'provider_error';
+    throw error;
   }
   if (!response.ok) {
     const error = new Error(data?.code ? errorText(data.code) : (data?.error || errorText('provider_error')));
@@ -424,8 +429,8 @@ const analyzeText = async () => {
       return true;
     } catch (error) {
       latestAnalysis = null;
-      analysisErrorCode = error.code || 'provider_error';
-      summaryOutput.textContent = error.message || t('errors.provider_error');
+      analysisErrorCode = error.code || 'provider_unavailable';
+      summaryOutput.textContent = errorText(analysisErrorCode);
       summaryOutput.classList.remove('is-loading');
       renderKeywords([]);
       renderClassification([]);
@@ -453,9 +458,19 @@ const uploadPdf = async (event) => {
   if (!file) return;
   pdfInput.value = '';
   setBusy(true, 'statusReadingPdf');
-  currentFileName = file.name;
-  currentFileSize = file.size;
+  currentDocumentText = '';
+  currentPages = null;
+  currentFileSize = 0;
+  analyzedText = '';
   clearConversation();
+  docFile.textContent = t('noDocument');
+  docPages.textContent = '0';
+  docSize.textContent = '0 KB';
+  summaryOutput.textContent = t('summaryEmpty');
+  summaryReferences.hidden = true;
+  renderKeywords([]);
+  renderClassification([]);
+  modelBadge.hidden = true;
   const formData = new FormData();
   formData.append('file', file);
   latestAnalysis = null;
@@ -464,11 +479,11 @@ const uploadPdf = async (event) => {
     const data = await requestJson('/api/upload-pdf', { method: 'POST', body: formData });
     currentDocumentText = data.text || '';
     currentPages = Array.isArray(data.pages) ? data.pages : null;
-    currentFileName = data.file_name || file.name;
+    const fileName = data.file_name || file.name;
     currentFileSize = data.size_bytes || file.size;
     analyzedText = '';
     textInput.value = currentDocumentText;
-    docFile.textContent = currentFileName;
+    docFile.textContent = fileName;
     docPages.textContent = String(data.page_count || 0);
     docSize.textContent = formatBytes(currentFileSize);
     setBusy(false);
@@ -476,8 +491,8 @@ const uploadPdf = async (event) => {
     if (!completed) return;
   } catch (error) {
     setStatus('statusPdfError');
-    analysisErrorCode = error.code || 'invalid_pdf';
-    summaryOutput.textContent = error.message || t('errors.invalid_pdf');
+    analysisErrorCode = error.code || 'provider_unavailable';
+    summaryOutput.textContent = errorText(analysisErrorCode);
     summaryOutput.classList.remove('is-loading');
     setBusy(false);
   }
@@ -523,8 +538,8 @@ const submitQuestion = async (event) => {
   } catch (error) {
     pendingMessage.pending = false;
     pendingMessage.error = true;
-    pendingMessage.code = error.code || 'provider_error';
-    pendingMessage.content = error.message || t('errors.provider_error');
+    pendingMessage.code = error.code || 'provider_unavailable';
+    pendingMessage.content = errorText(pendingMessage.code);
     setStatus('statusError');
   } finally {
     renderChatHistory();

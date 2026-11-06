@@ -124,6 +124,21 @@ class AIAnalysisTests(unittest.TestCase):
         self.assertEqual(post.call_args.kwargs["json"]["messages"], messages)
         self.assertEqual(post.call_args.kwargs["json"]["model"], ai_utils.DEFAULT_CHAT_MODEL)
 
+    def test_provider_rate_limit_has_a_retryable_error_code(self):
+        response = Mock()
+        response.ok = False
+        response.status_code = 429
+        response.json.return_value = {"error": "rate limit"}
+        with (
+            patch.object(ai_utils, "HF_TOKEN", "test-token"),
+            patch.object(ai_utils.requests, "post", return_value=response),
+        ):
+            with self.assertRaises(ai_utils.AIServiceError) as error:
+                ai_utils._call_chat([{"role": "user", "content": "test"}])
+
+        self.assertEqual(error.exception.code, "provider_rate_limit")
+        self.assertEqual(error.exception.status_code, 429)
+
 
 if __name__ == "__main__":
     unittest.main()

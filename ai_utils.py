@@ -34,9 +34,8 @@ SUMMARY_PROMPT = """Create a faithful, useful summary of the supplied document e
 main ideas, arguments, important concepts, and conclusions when present. Remove repetition without omitting significant
 information. Do not add facts. Return only valid JSON with one string property named "summary"."""
 
-CHUNK_PROMPT = """Analyze this excerpt from a longer document. Preserve its key claims and terminology in a concise
-summary, and identify meaningful concepts, entities, and specialized terms (not generic frequent words).
-Return only valid JSON: {"summary": "...", "keywords": ["..."]}."""
+CHUNK_PROMPT = """For each excerpt, preserve its key claims and terminology in a concise summary (up to 80 words)
+and identify up to eight meaningful concepts, entities, and specialized terms, not generic frequent words."""
 
 INSIGHTS_PROMPT = """Using all supplied excerpt summaries and keyword candidates, create the final document analysis.
 Return only valid JSON with exactly these properties:
@@ -342,10 +341,6 @@ def _unique_references(chunks: list[dict[str, Any]]) -> list[int]:
     return sorted(references)
 
 
-def _map_chunk(chunk: dict[str, Any]) -> dict[str, Any]:
-    return _map_chunks([chunk])[0]
-
-
 def _map_chunks(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     mapped: list[dict[str, Any]] = []
     for batch_start in range(0, len(chunks), MAP_BATCH_SIZE):
@@ -554,7 +549,7 @@ def classify_text(text: str, pages: list[str] | None = None) -> dict[str, Any]:
     if not cleaned and not pages:
         raise AIServiceError("Add document text before starting an analysis.", "empty_document", 400)
     chunks = chunk_document(cleaned, pages)
-    mapped = [_map_chunk(chunk) for chunk in chunks]
+    mapped = _map_chunks(chunks)
     reduced = _reduce_summaries([item["summary"] for item in mapped])
     result = _run_json(
         DOCUMENT_SYSTEM_PROMPT,
