@@ -1,143 +1,175 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ initial_locale }}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="LectorIA: análisis inteligente de documentos PDF y texto con resumen, preguntas, palabras clave y clasificación."
+      content="LectorIA turns PDFs and text into clear summaries, useful keywords, topic insights, and evidence-based answers."
     />
-    <title>LectorIA</title>
+    <meta name="theme-color" content="#edf7ff" />
+    <title>LectorIA — Document intelligence</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   </head>
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <div class="brand" aria-label="LectorIA logo y nombre">
-          <img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="Logo de LectorIA" class="brand-mark" />
+        <a class="brand" href="/" aria-label="LectorIA home">
+          <img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" class="brand-mark" />
           <span class="brand-name">LectorIA</span>
+        </a>
+        <div class="header-tools">
+          <nav class="nav" aria-label="Document sections" data-i18n-aria-label="navLabel">
+            <button class="nav-pill active" type="button" data-nav-target="summary-section" data-i18n="navSummary">Summary</button>
+            <button class="nav-pill" type="button" data-nav-target="keywords-section" data-i18n="navKeywords">Keywords</button>
+            <button class="nav-pill" type="button" data-nav-target="question-section" data-i18n="navQuestions">Ask questions</button>
+          </nav>
+          <label class="language-picker">
+            <span class="sr-only" data-i18n="languageLabel">Interface language</span>
+            <select id="language-select" aria-label="Interface language" data-i18n-aria-label="languageLabel">
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
         </div>
-        <nav class="nav" aria-label="Navegación principal">
-          <button class="nav-pill active" type="button">Resumen</button>
-          <button class="nav-pill" type="button">Palabras clave</button>
-          <button class="nav-pill" type="button">Preguntas</button>
-        </nav>
       </header>
 
       <main class="app-shell">
-        <section class="hero-section">
+        <section class="hero-section" aria-labelledby="hero-title">
           <div class="hero-copy">
-            <span class="eyebrow">Tu lector inteligente</span>
-            <h1>
-              Analiza documentos<br />
-              <span>como un experto.</span>
+            <span class="eyebrow" data-i18n="eyebrow">Your thoughtful document reader</span>
+            <h1 id="hero-title">
+              <span data-i18n="heroTitleFirst">Understand every</span><br />
+              <span data-i18n="heroTitleSecond">document, faster.</span>
             </h1>
-            <p>
-              Sube un PDF o pega texto para resumir contenido, responder preguntas,
-              extraer palabras clave y clasificar el mensaje con IA.
+            <p data-i18n="heroDescription">
+              Turn a PDF or pasted text into a grounded summary, meaningful keywords, topic insights, and answers you can trace back to the source.
             </p>
             <div class="hero-actions">
-              <button id="upload-trigger" class="button button-primary" type="button">Subir PDF</button>
-              <button id="manual-analyze" class="button button-secondary" type="button">Analizar texto</button>
+              <button id="upload-trigger" class="button button-primary" type="button" data-i18n="uploadPdf">Upload PDF</button>
+              <button id="manual-analyze" class="button button-secondary" type="button" data-i18n="analyzeText">Analyze text</button>
             </div>
+            <p class="privacy-note"><span class="privacy-dot"></span><span data-i18n="privacyShort">Your document is processed temporarily and is not stored by LectorIA.</span></p>
           </div>
 
-          <div class="input-card card">
+          <div class="input-card card" id="input-section">
             <div class="card-header">
-              <span class="mini-label">Fuente</span>
-              <button id="pdf-button" class="tiny-button" type="button">PDF</button>
+              <div>
+                <span class="mini-label" data-i18n="sourceLabel">Your source</span>
+                <h2 data-i18n="addDocument">Add a document</h2>
+              </div>
+              <button id="pdf-button" class="tiny-button" type="button" data-i18n="choosePdf">Choose PDF</button>
             </div>
-            <input id="pdf-input" type="file" accept="application/pdf" hidden />
-            <textarea id="text-input" rows="10" placeholder="Pega aquí el texto del documento o del contenido que quieras analizar..."></textarea>
+            <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden />
+            <label class="sr-only" for="text-input" data-i18n="textInputLabel">Document text</label>
+            <textarea id="text-input" rows="9" placeholder="Paste text from a document here..." data-i18n-placeholder="textPlaceholder"></textarea>
             <div class="input-footer">
-              <span id="status-badge" class="status-badge">Listo para analizar</span>
-              <button id="analyze-button" class="button button-primary compact" type="button">Analizar contenido</button>
+              <span id="status-badge" class="status-badge" role="status" aria-live="polite">
+                <span class="status-dot"></span><span id="status-text">Ready to analyze</span>
+              </span>
+              <button id="analyze-button" class="button button-primary compact" type="button" data-i18n="analyzeDocument">Analyze document</button>
+            </div>
+            <div id="progress-wrap" class="progress-wrap" hidden aria-hidden="true">
+              <div class="progress-track"><span class="progress-fill"></span></div>
             </div>
           </div>
         </section>
 
-        <section class="workspace-grid">
-          <article class="panel card results-panel">
+        <div class="ad-unit ad-hero" data-ad-slot-name="hero" aria-label="Advertisement" data-i18n-aria-label="adLabel" hidden>
+          <span class="ad-placeholder" data-i18n="adPlaceholder">Advertisement</span>
+        </div>
+
+        <section class="workspace-grid" aria-label="Document analysis workspace" data-i18n-aria-label="workspaceLabel">
+          <article class="panel card results-panel" aria-labelledby="results-title">
             <div class="panel-header">
-              <span class="mini-label">Documento</span>
-              <h2>Resultados</h2>
+              <div>
+                <span class="mini-label" data-i18n="analysisLabel">Your analysis</span>
+                <h2 id="results-title" data-i18n="resultsTitle">Document insights</h2>
+              </div>
+              <span id="analysis-model" class="model-badge" hidden></span>
             </div>
 
-            <div class="result-block">
+            <section id="summary-section" class="result-block" aria-labelledby="summary-title">
               <div class="block-title-row">
-                <h3>Resumen</h3>
+                <h3 id="summary-title" data-i18n="summaryTitle">Summary</h3>
+                <button class="text-button" type="button" data-repeat-analysis data-i18n="runAgain">Run again</button>
               </div>
-              <p id="summary-output" class="result-text muted">
-                El resumen aparecerá aquí cuando introduzcas texto o subas un PDF.
-              </p>
+              <div id="summary-output" class="result-text muted" aria-live="polite">
+                Your summary will appear here after analysis.
+              </div>
+              <div id="summary-references" class="reference-list" hidden></div>
+            </section>
+
+            <div class="ad-unit ad-middle" data-ad-slot-name="middle" aria-label="Advertisement" data-i18n-aria-label="adLabel" hidden>
+              <span class="ad-placeholder" data-i18n="adPlaceholder">Advertisement</span>
             </div>
 
-            <div class="result-block">
+            <section id="keywords-section" class="result-block" aria-labelledby="keywords-title">
               <div class="block-title-row">
-                <h3>Palabras clave</h3>
+                <h3 id="keywords-title" data-i18n="keywordsTitle">Key concepts</h3>
+                <span id="keywords-state" class="result-state" aria-live="polite"></span>
               </div>
-              <div id="keywords-output" class="chip-list">
-                <span class="chip placeholder">Sin resultados</span>
+              <div id="keywords-output" class="chip-list" aria-live="polite">
+                <span class="chip placeholder" data-i18n="keywordsEmpty">No keywords yet</span>
               </div>
-            </div>
+            </section>
 
-            <div class="result-block">
+            <section id="classification-section" class="result-block" aria-labelledby="classification-title">
               <div class="block-title-row">
-                <h3>Clasificación</h3>
+                <h3 id="classification-title" data-i18n="topicTitle">Topics</h3>
               </div>
-              <div id="classification-output" class="score-list">
-                <div class="score-row placeholder">Esperando análisis...</div>
+              <div id="classification-output" class="score-list" aria-live="polite">
+                <div class="score-row placeholder" data-i18n="topicEmpty">Waiting for analysis</div>
               </div>
-            </div>
+            </section>
           </article>
 
-          <aside class="panel card questions-panel">
+          <aside id="question-section" class="panel card questions-panel" aria-labelledby="question-title">
             <div class="panel-header">
-              <span class="mini-label">Preguntas</span>
-              <h2>Consulta el documento</h2>
+              <div>
+                <span class="mini-label" data-i18n="questionsLabel">Ask the document</span>
+                <h2 id="question-title" data-i18n="questionHeading">Get a clear answer</h2>
+              </div>
             </div>
 
+            <div id="question-history" class="question-history" aria-live="polite">
+              <p class="history-empty" data-i18n="questionEmpty">Ask anything about the document. Answers are grounded in the text you provided.</p>
+            </div>
             <form id="question-form" class="question-form">
-              <label for="question-input" class="sr-only">Pregunta</label>
-              <input
-                id="question-input"
-                type="text"
-                placeholder="¿Qué tema trata este documento?"
-                autocomplete="off"
-              />
-              <button type="submit" class="button button-primary">Responder</button>
+              <label for="question-input" class="sr-only" data-i18n="questionInputLabel">Your question</label>
+              <input id="question-input" type="text" placeholder="What is this document about?" data-i18n-placeholder="questionPlaceholder" autocomplete="off" />
+              <button id="question-submit" type="submit" class="button button-primary" data-i18n="askButton">Ask</button>
             </form>
 
-            <div class="answer-box">
-              <h3>Respuesta</h3>
-              <p id="answer-output" class="result-text muted">
-                Haz una pregunta sobre el texto cargado para obtener una respuesta contextualizada.
-              </p>
+            <div class="doc-meta">
+              <h3 data-i18n="metadataTitle">Document details</h3>
+              <div class="meta-grid">
+                <div><span class="meta-label" data-i18n="fileLabel">File</span><strong id="doc-file" data-i18n="noDocument">No document</strong></div>
+                <div><span class="meta-label" data-i18n="pagesLabel">Pages</span><strong id="doc-pages">0</strong></div>
+                <div><span class="meta-label" data-i18n="sizeLabel">Size</span><strong id="doc-size">0 KB</strong></div>
+              </div>
             </div>
 
-            <div class="doc-meta">
-              <h3>Metadatos</h3>
-              <div class="meta-grid">
-                <div>
-                  <span class="meta-label">Archivo</span>
-                  <strong id="doc-file">Sin documento</strong>
-                </div>
-                <div>
-                  <span class="meta-label">Páginas</span>
-                  <strong id="doc-pages">0</strong>
-                </div>
-                <div>
-                  <span class="meta-label">Tamaño</span>
-                  <strong id="doc-size">0 KB</strong>
-                </div>
-              </div>
+            <div class="ad-unit ad-sidebar" data-ad-slot-name="sidebar" aria-label="Advertisement" data-i18n-aria-label="adLabel" hidden>
+              <span class="ad-placeholder" data-i18n="adPlaceholder">Advertisement</span>
             </div>
           </aside>
         </section>
       </main>
-    </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+      <footer class="site-footer">
+        <div class="footer-brand"><img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" /><strong>LectorIA</strong></div>
+        <p data-i18n="footerPrivacy">Documents are processed temporarily for analysis. Avoid uploading sensitive personal information.</p>
+        <div class="ad-unit ad-footer" data-ad-slot-name="footer" aria-label="Advertisement" data-i18n-aria-label="adLabel" hidden>
+          <span class="ad-placeholder" data-i18n="adPlaceholder">Advertisement</span>
+        </div>
+        <small><span data-i18n="footerMade">Made for clearer reading.</span> · <a href="https://github.com/MichaelAcostaDev/LectorIA" target="_blank" rel="noopener noreferrer" data-i18n="sourceCode">Open source</a></small>
+      </footer>
+    </div>
+    <script id="lectoria-config" type="application/json">
+      {{ {"locale": initial_locale, "adsense": adsense_config, "developmentAds": show_development_ads}|tojson }}
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
   </body>
 </html>
