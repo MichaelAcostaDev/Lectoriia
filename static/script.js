@@ -6,6 +6,7 @@ const translations = {
     heroTitleFirst: 'Understand every', heroTitleSecond: 'document, faster.',
     heroDescription: 'Turn a PDF or pasted text into a grounded summary, meaningful keywords, topic insights, and answers you can trace back to the source.',
     uploadPdf: 'Upload PDF', analyzeText: 'Analyze text', privacyShort: 'Your document is processed temporarily and is not stored by LectorIA.',
+    privacyPolicy: 'Privacy',
     sourceLabel: 'Your source', addDocument: 'Add a document', choosePdf: 'Choose PDF',
     textInputLabel: 'Document text', textPlaceholder: 'Paste text from a document here...',
     ready: 'Ready to analyze', analyzeDocument: 'Analyze document', analysisLabel: 'Your analysis',
@@ -33,6 +34,7 @@ const translations = {
       invalid_token: 'The Hugging Face token was rejected. Check that it has Inference Providers access.',
       model_unavailable: 'The configured AI model is unavailable from Hugging Face Inference Providers.',
       provider_rate_limit: 'The AI provider is busy. Wait a moment and retry.',
+      provider_billing: 'The Hugging Face account cannot use this inference provider. Review its billing or usage limits.',
       provider_timeout: 'The AI provider took too long to respond. Please retry.',
       provider_unavailable: 'The AI provider could not be reached. Check the connection and retry.',
       provider_error: 'The AI provider could not complete the request. Please retry.',
@@ -43,11 +45,11 @@ const translations = {
       invalid_request: 'The request data is invalid.',
       invalid_file_type: 'Choose a PDF file.',
       empty_file: 'The selected PDF is empty.',
-      file_too_large: 'The PDF exceeds the 15 MB file size limit.',
+      file_too_large: 'The PDF exceeds the 4 MB production or 15 MB local file size limit.',
       no_extractable_text: 'No readable text could be extracted. The PDF may be scanned or protected.',
       invalid_pdf: 'The PDF could not be read. Check that the file is valid and not protected.',
       missing_file: 'Choose a PDF file first.',
-      request_too_large: 'The request exceeds the 15 MB upload limit.',
+      request_too_large: 'The request exceeds the configured upload limit.',
       invalid_provider_response: 'The AI provider returned an incomplete response. Please retry.',
       empty_provider_response: 'The AI provider returned an empty response. Please retry.'
     },
@@ -64,6 +66,7 @@ const translations = {
     heroTitleFirst: 'Comprende cada', heroTitleSecond: 'documento, más rápido.',
     heroDescription: 'Convierte un PDF o texto en un resumen fundamentado, conceptos clave, temas y respuestas vinculadas con la fuente.',
     uploadPdf: 'Subir PDF', analyzeText: 'Analizar texto', privacyShort: 'LectorIA procesa el documento temporalmente y no lo almacena.',
+    privacyPolicy: 'Privacidad',
     sourceLabel: 'Tu fuente', addDocument: 'Añade un documento', choosePdf: 'Elegir PDF',
     textInputLabel: 'Texto del documento', textPlaceholder: 'Pega aquí el texto de un documento...',
     ready: 'Listo para analizar', analyzeDocument: 'Analizar documento', analysisLabel: 'Tu análisis',
@@ -91,6 +94,7 @@ const translations = {
       invalid_token: 'Hugging Face rechazó el token. Comprueba que tenga acceso a Inference Providers.',
       model_unavailable: 'El modelo configurado no está disponible en Hugging Face Inference Providers.',
       provider_rate_limit: 'El proveedor de IA está ocupado. Espera un momento e inténtalo de nuevo.',
+      provider_billing: 'La cuenta de Hugging Face no puede usar este proveedor de inferencia. Revisa la facturación o los límites de uso.',
       provider_timeout: 'El proveedor de IA tardó demasiado en responder. Inténtalo de nuevo.',
       provider_unavailable: 'No se pudo conectar con el proveedor de IA. Comprueba la conexión e inténtalo de nuevo.',
       provider_error: 'El proveedor de IA no pudo completar la solicitud. Inténtalo de nuevo.',
@@ -101,11 +105,11 @@ const translations = {
       invalid_request: 'Los datos de la solicitud no son válidos.',
       invalid_file_type: 'Elige un archivo PDF.',
       empty_file: 'El PDF seleccionado está vacío.',
-      file_too_large: 'El PDF supera el límite de 15 MB.',
+      file_too_large: 'El PDF supera el límite de 4 MB en producción o 15 MB en local.',
       no_extractable_text: 'No se pudo extraer texto legible. El PDF podría ser una imagen o estar protegido.',
       invalid_pdf: 'No se pudo leer el PDF. Comprueba que sea válido y no esté protegido.',
       missing_file: 'Elige un archivo PDF primero.',
-      request_too_large: 'La solicitud supera el límite de carga de 15 MB.',
+      request_too_large: 'La solicitud supera el límite de carga configurado.',
       invalid_provider_response: 'El proveedor de IA devolvió una respuesta incompleta. Inténtalo de nuevo.',
       empty_provider_response: 'El proveedor de IA devolvió una respuesta vacía. Inténtalo de nuevo.'
     },
@@ -548,12 +552,15 @@ const submitQuestion = async (event) => {
 };
 
 const initializeAds = () => {
-  const { publisherId, slots = {} } = appConfig.adsense || {};
+  if (initializeAds.initialized) return;
+  initializeAds.initialized = true;
+  const { publisherId, slots = {}, autoAds = false } = appConfig.adsense || {};
   const validPublisher = /^ca-pub-\d+$/.test(publisherId || '');
-  let scriptAdded = false;
+  let hasManualAd = false;
   document.querySelectorAll('.ad-unit').forEach((container) => {
     const slot = slots[container.dataset.adSlotName];
     if (validPublisher && /^\d+$/.test(slot || '')) {
+      hasManualAd = true;
       container.hidden = false;
       container.replaceChildren();
       const ad = document.createElement('ins');
@@ -564,23 +571,6 @@ const initializeAds = () => {
       ad.dataset.adFormat = 'auto';
       ad.dataset.fullWidthResponsive = 'true';
       container.append(ad);
-      if (!scriptAdded) {
-        const script = document.createElement('script');
-        script.async = true;
-        script.crossOrigin = 'anonymous';
-        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(publisherId)}`;
-        script.onload = () => {
-          document.querySelectorAll('.adsbygoogle').forEach(() => {
-            try {
-              (window.adsbygoogle = window.adsbygoogle || []).push({});
-            } catch (error) {
-              console.error('AdSense could not initialize an ad slot.', error);
-            }
-          });
-        };
-        document.head.append(script);
-        scriptAdded = true;
-      }
     } else if (appConfig.developmentAds) {
       container.hidden = false;
       container.classList.add('is-development');
@@ -588,6 +578,32 @@ const initializeAds = () => {
       container.hidden = true;
     }
   });
+  if (!validPublisher || (!autoAds && !hasManualAd)) return;
+
+  const existingScript = document.querySelector(
+    'script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]'
+  );
+  if (existingScript) return;
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.crossOrigin = 'anonymous';
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(publisherId)}`;
+  script.onload = () => {
+    document.querySelectorAll('.adsbygoogle').forEach((ad) => {
+      if (ad.dataset.initialized) return;
+      ad.dataset.initialized = 'true';
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (error) {
+        console.error('AdSense could not initialize an ad slot.', error);
+      }
+    });
+  };
+  script.onerror = () => {
+    console.error('The AdSense library could not be loaded.');
+  };
+  document.head.append(script);
 };
 
 document.querySelectorAll('[data-nav-target]').forEach((button) => {

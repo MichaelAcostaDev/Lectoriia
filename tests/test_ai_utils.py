@@ -95,7 +95,7 @@ class AIAnalysisTests(unittest.TestCase):
         self.assertEqual(result["source"], "huggingface")
 
     def test_unavailable_token_does_not_produce_a_heuristic_answer(self):
-        with patch.object(ai_utils, "HF_TOKEN", ""):
+        with patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": ""}):
             with self.assertRaises(ai_utils.AIServiceError) as error:
                 ai_utils._call_chat([{"role": "user", "content": "test"}])
 
@@ -111,7 +111,7 @@ class AIAnalysisTests(unittest.TestCase):
             {"role": "user", "content": "Question"},
         ]
         with (
-            patch.object(ai_utils, "HF_TOKEN", "test-token"),
+            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
             patch.object(ai_utils.requests, "post", return_value=response) as post,
         ):
             content = ai_utils._call_chat(messages)
@@ -123,6 +123,10 @@ class AIAnalysisTests(unittest.TestCase):
         )
         self.assertEqual(post.call_args.kwargs["json"]["messages"], messages)
         self.assertEqual(post.call_args.kwargs["json"]["model"], ai_utils.DEFAULT_CHAT_MODEL)
+        self.assertEqual(
+            post.call_args.kwargs["headers"]["Authorization"],
+            "Bearer test-token",
+        )
 
     def test_provider_rate_limit_has_a_retryable_error_code(self):
         response = Mock()
@@ -130,7 +134,7 @@ class AIAnalysisTests(unittest.TestCase):
         response.status_code = 429
         response.json.return_value = {"error": "rate limit"}
         with (
-            patch.object(ai_utils, "HF_TOKEN", "test-token"),
+            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
             patch.object(ai_utils.requests, "post", return_value=response),
         ):
             with self.assertRaises(ai_utils.AIServiceError) as error:
@@ -138,6 +142,21 @@ class AIAnalysisTests(unittest.TestCase):
 
         self.assertEqual(error.exception.code, "provider_rate_limit")
         self.assertEqual(error.exception.status_code, 429)
+
+    def test_provider_billing_failure_has_a_specific_error(self):
+        response = Mock()
+        response.ok = False
+        response.status_code = 402
+        response.json.return_value = {"error": "payment required"}
+        with (
+            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
+            patch.object(ai_utils.requests, "post", return_value=response),
+        ):
+            with self.assertRaises(ai_utils.AIServiceError) as error:
+                ai_utils._call_chat([{"role": "user", "content": "test"}])
+
+        self.assertEqual(error.exception.code, "provider_billing")
+        self.assertEqual(error.exception.status_code, 503)
 
 
 if __name__ == "__main__":

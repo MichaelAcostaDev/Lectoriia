@@ -277,6 +277,9 @@ textarea::placeholder, input::placeholder { color: #737985; opacity: 1; }
 .privacy-details { grid-column: 1 / -1; max-width: 860px; font-size: .82rem; line-height: 1.55; }
 .privacy-details summary { width: fit-content; color: #1d5ca4; font-weight: 750; cursor: pointer; }
 .privacy-details p { max-width: 860px; margin: 8px 0 0; }
+.privacy-page { max-width: 860px; margin: 40px auto; padding: 32px; }
+.privacy-page h1, .privacy-page h2 { color: #17243a; }
+.privacy-page p { color: #4a505d; line-height: 1.65; }
 .site-footer small { grid-column: 1 / -1; font-size: .78rem; }
 .site-footer a { color: #1d5ca4; font-weight: 700; }
 .site-footer .ad-footer { grid-column: 1 / -1; }

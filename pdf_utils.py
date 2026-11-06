@@ -6,7 +6,8 @@ from typing import Dict, List
 
 from pypdf import PdfReader
 
-MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024
+MAX_FILE_SIZE_MB = 4 if os.getenv("VERCEL") else 15
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +28,11 @@ def validate_pdf(file_obj, file_name: str) -> None:
     if file_size <= 0:
         raise PDFProcessingError("The PDF file is empty.", "empty_file")
     if file_size > MAX_FILE_SIZE_BYTES:
-        raise PDFProcessingError("The PDF exceeds the 15 MB file size limit.", "file_too_large", 413)
+        raise PDFProcessingError(
+            f"The PDF exceeds the {MAX_FILE_SIZE_MB} MB file size limit.",
+            "file_too_large",
+            413,
+        )
 
 
 def extract_pdf_text(file_obj) -> Dict[str, object]:

@@ -168,7 +168,11 @@
         <div class="ad-unit ad-footer" data-ad-slot-name="footer" aria-label="Advertisement" data-i18n-aria-label="adLabel" hidden>
           <span class="ad-placeholder" data-i18n="adPlaceholder">Advertisement</span>
         </div>
-        <small><span data-i18n="footerMade">Made for clearer reading.</span> · <a href="https://github.com/MichaelAcostaDev/LectorIA" target="_blank" rel="noopener noreferrer" data-i18n="sourceCode">Open source</a></small>
+        <small>
+          <span data-i18n="footerMade">Made for clearer reading.</span> ·
+          <a href="{{ url_for('privacy') }}" data-i18n="privacyPolicy">Privacy</a> ·
+          <a href="https://github.com/MichaelAcostaDev/LectorIA" target="_blank" rel="noopener noreferrer" data-i18n="sourceCode">Open source</a>
+        </small>
       </footer>
     </div>
     <script id="lectoria-config" type="application/json">

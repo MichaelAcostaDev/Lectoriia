@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-HF_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN", "")
 DEFAULT_CHAT_MODEL = os.getenv(
     "HF_CHAT_MODEL", "Qwen/Qwen2.5-7B-Instruct-1M"
 )
@@ -99,6 +98,14 @@ def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "")).strip()
 
 
+def get_hf_token() -> str:
+    return os.getenv("HUGGINGFACE_API_TOKEN", "").strip()
+
+
+def has_hf_token() -> bool:
+    return bool(get_hf_token())
+
+
 def _document_pages(text: str, pages: list[str] | None = None) -> list[dict[str, Any]]:
     if pages:
         return [
@@ -171,7 +178,7 @@ def chunk_document(
 
 
 def _require_token() -> None:
-    if not HF_TOKEN:
+    if not has_hf_token():
         raise AIServiceError(
             "AI analysis is unavailable because HUGGINGFACE_API_TOKEN is not configured.",
             "missing_token",
@@ -185,7 +192,7 @@ def _call_chat(messages: list[dict[str, str]], max_tokens: int = 900) -> str:
         response = requests.post(
             HF_CHAT_COMPLETIONS_URL,
             headers={
-                "Authorization": f"Bearer {HF_TOKEN}",
+                "Authorization": f"Bearer {get_hf_token()}",
                 "Content-Type": "application/json",
             },
             json={
@@ -233,7 +240,13 @@ def _call_chat(messages: list[dict[str, str]], max_tokens: int = 900) -> str:
                 "The AI provider rejected the configured token. Check its Inference Providers permissions.",
                 503,
             )
-        elif status == 404 or "model not found" in normalized_detail or "not supported" in normalized_detail:
+        elif status == 402:
+            code, message, mapped_status = (
+                "provider_billing",
+                "The Hugging Face account cannot use the selected inference provider. Review its billing or usage limits.",
+                503,
+            )
+        elif status in (404, 422) or "model not found" in normalized_detail or "not supported" in normalized_detail:
             code, message, mapped_status = (
                 "model_unavailable",
                 "The configured AI model is unavailable from the current Hugging Face providers.",
