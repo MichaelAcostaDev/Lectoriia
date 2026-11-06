@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="LectorIA: análisis inteligente de documentos PDF y texto con resumen, preguntas, palabras clave y clasificación."
+    />
+    <title>LectorIA</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="LectorIA logo y nombre">
+          <img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="Logo de LectorIA" class="brand-mark" />
+          <span class="brand-name">LectorIA</span>
+        </div>
+        <nav class="nav" aria-label="Navegación principal">
+          <button class="nav-pill active" type="button">Resumen</button>
+          <button class="nav-pill" type="button">Palabras clave</button>
+          <button class="nav-pill" type="button">Preguntas</button>
+        </nav>
+      </header>
+
+      <main class="app-shell">
+        <section class="hero-section">
+          <div class="hero-copy">
+            <span class="eyebrow">Tu lector inteligente</span>
+            <h1>
+              Analiza documentos<br />
+              <span>como un experto.</span>
+            </h1>
+            <p>
+              Sube un PDF o pega texto para resumir contenido, responder preguntas,
+              extraer palabras clave y clasificar el mensaje con IA.
+            </p>
+            <div class="hero-actions">
+              <button id="upload-trigger" class="button button-primary" type="button">Subir PDF</button>
+              <button id="manual-analyze" class="button button-secondary" type="button">Analizar texto</button>
+            </div>
+          </div>
+
+          <div class="input-card card">
+            <div class="card-header">
+              <span class="mini-label">Fuente</span>
+              <button id="pdf-button" class="tiny-button" type="button">PDF</button>
+            </div>
+            <input id="pdf-input" type="file" accept="application/pdf" hidden />
+            <textarea id="text-input" rows="10" placeholder="Pega aquí el texto del documento o del contenido que quieras analizar..."></textarea>
+            <div class="input-footer">
+              <span id="status-badge" class="status-badge">Listo para analizar</span>
+              <button id="analyze-button" class="button button-primary compact" type="button">Analizar contenido</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-grid">
+          <article class="panel card results-panel">
+            <div class="panel-header">
+              <span class="mini-label">Documento</span>
+              <h2>Resultados</h2>
+            </div>
+
+            <div class="result-block">
+              <div class="block-title-row">
+                <h3>Resumen</h3>
+              </div>
+              <p id="summary-output" class="result-text muted">
+                El resumen aparecerá aquí cuando introduzcas texto o subas un PDF.
+              </p>
+            </div>
+
+            <div class="result-block">
+              <div class="block-title-row">
+                <h3>Palabras clave</h3>
+              </div>
+              <div id="keywords-output" class="chip-list">
+                <span class="chip placeholder">Sin resultados</span>
+              </div>
+            </div>
+
+            <div class="result-block">
+              <div class="block-title-row">
+                <h3>Clasificación</h3>
+              </div>
+              <div id="classification-output" class="score-list">
+                <div class="score-row placeholder">Esperando análisis...</div>
+              </div>
+            </div>
+          </article>
+
+          <aside class="panel card questions-panel">
+            <div class="panel-header">
+              <span class="mini-label">Preguntas</span>
+              <h2>Consulta el documento</h2>
+            </div>
+
+            <form id="question-form" class="question-form">
+              <label for="question-input" class="sr-only">Pregunta</label>
+              <input
+                id="question-input"
+                type="text"
+                placeholder="¿Qué tema trata este documento?"
+                autocomplete="off"
+              />
+              <button type="submit" class="button button-primary">Responder</button>
+            </form>
+
+            <div class="answer-box">
+              <h3>Respuesta</h3>
+              <p id="answer-output" class="result-text muted">
+                Haz una pregunta sobre el texto cargado para obtener una respuesta contextualizada.
+              </p>
+            </div>
+
+            <div class="doc-meta">
+              <h3>Metadatos</h3>
+              <div class="meta-grid">
+                <div>
+                  <span class="meta-label">Archivo</span>
+                  <strong id="doc-file">Sin documento</strong>
+                </div>
+                <div>
+                  <span class="meta-label">Páginas</span>
+                  <strong id="doc-pages">0</strong>
+                </div>
+                <div>
+                  <span class="meta-label">Tamaño</span>
+                  <strong id="doc-size">0 KB</strong>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
