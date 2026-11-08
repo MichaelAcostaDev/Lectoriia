@@ -15,7 +15,7 @@ from ai_utils import (
     extract_keywords,
     summarize_text,
 )
-from pdf_utils import PDFProcessingError, extract_pdf_text
+from pdf_utils import MAX_FILE_SIZE_BYTES, PDFProcessingError, extract_pdf_text
 
 load_dotenv()
 
@@ -90,6 +90,7 @@ def index():
             "slots": ad_slots,
             "autoAds": auto_ads,
         },
+        max_upload_bytes=MAX_FILE_SIZE_BYTES,
         show_development_ads=not bool(os.getenv("VERCEL")),
     )
 

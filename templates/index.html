@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="LectorIA turns PDFs and text into clear summaries, useful keywords, topic insights, and evidence-based answers."
+      content="lectoriia turns PDFs and text into extractive summaries, key concepts, topic suggestions, and evidence-based answers using local text processing."
     />
-    <meta name="theme-color" content="#edf7ff" />
-    <title>LectorIA — Document intelligence</title>
+    <meta name="theme-color" content="#dceeff" />
+    <title>lectoriia — Document reading, made clearer</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     {% if adsense_config.publisherId and (adsense_config.autoAds or adsense_config.slots) %}
@@ -22,9 +22,9 @@
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="LectorIA home" data-i18n-aria-label="homeLabel">
+        <a class="brand" href="/" aria-label="lectoriia home" data-i18n-aria-label="homeLabel">
           <img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" class="brand-mark" />
-          <span class="brand-name">LectorIA</span>
+          <span class="brand-name">lectoriia</span>
         </a>
         <div class="header-tools">
           <nav class="nav" aria-label="Document sections" data-i18n-aria-label="navLabel">
@@ -53,11 +53,19 @@
             <p data-i18n="heroDescription">
               Turn a PDF or pasted text into a grounded summary, meaningful keywords, topic insights, and answers you can trace back to the source.
             </p>
+            <div class="hero-visual" aria-hidden="true">
+              <span class="hero-paper hero-paper-back"></span>
+              <span class="hero-paper hero-paper-front">
+                <i></i><i></i><i></i><b></b>
+              </span>
+              <span class="hero-sticker">A + B</span>
+              <span class="hero-spark"></span>
+            </div>
             <div class="hero-actions">
               <button id="upload-trigger" class="button button-primary" type="button" data-i18n="uploadPdf">Upload PDF</button>
               <button id="manual-analyze" class="button button-secondary" type="button" data-i18n="analyzeText">Analyze text</button>
             </div>
-            <p class="privacy-note"><span class="privacy-dot"></span><span data-i18n="privacyShort">Your document is processed temporarily and is not stored by LectorIA.</span></p>
+            <p class="privacy-note"><span class="privacy-dot"></span><span data-i18n="privacyShort">The app processes text without sending it to an AI model.</span></p>
           </div>
 
           <div class="input-card card" id="input-section">
@@ -69,6 +77,10 @@
               <button id="pdf-button" class="tiny-button" type="button" data-i18n="choosePdf">Choose PDF</button>
             </div>
             <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden />
+            <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Drop a PDF here or choose a file" data-i18n-aria-label="dropZoneLabel">
+              <span class="drop-icon" aria-hidden="true">↥</span>
+              <span><strong data-i18n="dropTitle">Drop a PDF here</strong><small data-i18n="dropHint">or choose a file from your device</small></span>
+            </div>
             <label class="sr-only" for="text-input" data-i18n="textInputLabel">Document text</label>
             <textarea id="text-input" rows="9" placeholder="Paste text from a document here..." data-i18n-placeholder="textPlaceholder"></textarea>
             <div class="input-footer">
@@ -126,6 +138,7 @@
               <div class="block-title-row">
                 <h3 id="classification-title" data-i18n="topicTitle">Topics</h3>
               </div>
+              <p class="topic-score-hint" data-i18n="topicScoreHint">Relative match among detected topics, not a probability.</p>
               <div id="classification-output" class="score-list" aria-live="polite">
                 <div class="score-row placeholder" data-i18n="topicEmpty">Waiting for analysis</div>
               </div>
@@ -166,7 +179,7 @@
       </main>
 
       <footer class="site-footer">
-        <div class="footer-brand"><img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" /><strong>LectorIA</strong></div>
+        <div class="footer-brand"><img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" /><strong>lectoriia</strong></div>
         <p data-i18n="footerPrivacy">Documents are processed temporarily for analysis. Avoid uploading sensitive personal information.</p>
         <details class="privacy-details">
           <summary data-i18n="privacyDetailsTitle">Privacy and advertising</summary>
@@ -183,7 +196,7 @@
       </footer>
     </div>
     <script id="lectoria-config" type="application/json">
-      {{ {"locale": initial_locale, "adsense": adsense_config, "developmentAds": show_development_ads}|tojson }}
+      {{ {"locale": initial_locale, "adsense": adsense_config, "developmentAds": show_development_ads, "maxUploadBytes": max_upload_bytes}|tojson }}
     </script>
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
   </body>
