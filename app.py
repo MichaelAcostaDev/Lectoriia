@@ -45,7 +45,9 @@ def _document_arguments(payload: dict[str, Any]) -> tuple[str, list[str] | None]
 
 
 def _adsense_client_id() -> str:
-    publisher_id = os.getenv("ADSENSE_PUBLISHER_ID", "").strip()
+    publisher_id = os.getenv(
+        "ADSENSE_PUBLISHER_ID", "ca-pub-9460130837910562"
+    ).strip()
     match = re.fullmatch(r"(?:ca-)?pub-(\d+)", publisher_id)
     return f"ca-pub-{match.group(1)}" if match else ""
 
@@ -75,7 +77,11 @@ def index():
     locale = request.accept_languages.best_match(["es", "en"], default="en")
     publisher_id = _adsense_client_id()
     ad_slots = _adsense_slot_config()
-    auto_ads = os.getenv("ADSENSE_AUTO_ADS", "").strip().lower() in {"1", "true", "yes"}
+    auto_ads = os.getenv("ADSENSE_AUTO_ADS", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
     return render_template(
         "index.html",
         initial_locale=locale,

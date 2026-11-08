@@ -60,6 +60,18 @@ class FlaskRoutesTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<html lang="es">', response.data)
 
+    def test_adsense_defaults_to_configured_publisher_and_auto_ads(self):
+        with patch.dict(os.environ, {}, clear=True):
+            home = self.client.get("/")
+            ads_txt = self.client.get("/ads.txt")
+
+        self.assertIn(b'"publisherId": "ca-pub-9460130837910562"', home.data)
+        self.assertIn(b'"autoAds": true', home.data)
+        self.assertIn(
+            b"google.com, pub-9460130837910562, DIRECT, f08c47fec0942fa0",
+            ads_txt.data,
+        )
+
     def test_missing_publisher_id_does_not_create_ads_txt_in_production(self):
         with patch.dict(
             os.environ,
