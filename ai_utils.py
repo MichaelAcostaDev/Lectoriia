@@ -246,7 +246,17 @@ def _call_chat(messages: list[dict[str, str]], max_tokens: int = 900) -> str:
                 "The Hugging Face account cannot use the selected inference provider. Review its billing or usage limits.",
                 503,
             )
-        elif status in (404, 422) or "model not found" in normalized_detail or "not supported" in normalized_detail:
+        elif status == 404 or any(
+            phrase in normalized_detail
+            for phrase in (
+                "model not found",
+                "model is not available",
+                "model unavailable",
+                "no provider found",
+                "no provider available",
+                "not supported",
+            )
+        ):
             code, message, mapped_status = (
                 "model_unavailable",
                 "The configured AI model is unavailable from the current Hugging Face providers.",

@@ -158,6 +158,36 @@ class AIAnalysisTests(unittest.TestCase):
         self.assertEqual(error.exception.code, "provider_billing")
         self.assertEqual(error.exception.status_code, 503)
 
+    def test_unrelated_provider_validation_error_is_not_reported_as_model_unavailable(self):
+        response = Mock()
+        response.ok = False
+        response.status_code = 422
+        response.json.return_value = {"error": "Invalid value for temperature"}
+        with (
+            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
+            patch.object(ai_utils.requests, "post", return_value=response),
+        ):
+            with self.assertRaises(ai_utils.AIServiceError) as error:
+                ai_utils._call_chat([{"role": "user", "content": "test"}])
+
+        self.assertEqual(error.exception.code, "provider_error")
+        self.assertEqual(error.exception.status_code, 502)
+
+    def test_provider_model_error_is_reported_as_model_unavailable(self):
+        response = Mock()
+        response.ok = False
+        response.status_code = 422
+        response.json.return_value = {"error": "Model is not available"}
+        with (
+            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
+            patch.object(ai_utils.requests, "post", return_value=response),
+        ):
+            with self.assertRaises(ai_utils.AIServiceError) as error:
+                ai_utils._call_chat([{"role": "user", "content": "test"}])
+
+        self.assertEqual(error.exception.code, "model_unavailable")
+        self.assertEqual(error.exception.status_code, 503)
+
 
 if __name__ == "__main__":
     unittest.main()
