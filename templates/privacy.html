@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="LectorIA privacy information about document processing, AI providers, and advertising." />
+    <meta name="description" content="LectorIA privacy information about local document processing and advertising." />
     <meta name="theme-color" content="#edf7ff" />
     <title>{% if locale == "es" %}Privacidad — LectorIA{% else %}Privacy — LectorIA{% endif %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
@@ -24,8 +24,8 @@
           <p>Esta página describe cómo LectorIA procesa la información al utilizar el servicio. No subas documentos sensibles, confidenciales ni datos personales que no tengas autorización para compartir.</p>
           <h2>Documentos y texto</h2>
           <p>El texto que pegas se procesa para responder a tu solicitud. Para extraer texto de un PDF, el archivo se valida, se escribe temporalmente en el almacenamiento temporal del servidor y se elimina al terminar la extracción. La aplicación no mantiene una biblioteca ni conserva los documentos para usos posteriores. Los resultados y el historial de preguntas permanecen en la página del navegador y no se guardan deliberadamente en una cuenta de LectorIA.</p>
-          <h2>Procesamiento con IA</h2>
-          <p>El texto necesario para el análisis y las preguntas se envía a Hugging Face Inference Providers usando el modelo configurado por quien opera el servicio. El proveedor recibe el contenido de la solicitud y puede procesarlo según sus propios términos y prácticas de privacidad. Consulta la documentación y las condiciones vigentes del proveedor antes de enviar documentos. LectorIA no controla el tratamiento que realice un tercero.</p>
+          <h2>Procesamiento del análisis</h2>
+          <p>Los análisis y las respuestas se generan en el servidor con reglas de procesamiento de texto; no se utiliza un modelo de IA ni se envía el contenido a un proveedor de inferencia. El PDF se carga al servicio para extraer su texto. El proveedor de alojamiento puede procesar solicitudes y mantener registros técnicos conforme a sus propias condiciones y políticas.</p>
           <h2>Anuncios y cookies</h2>
           <p>Si el operador habilita Google AdSense, Google y sus socios pueden utilizar cookies, identificadores u otras tecnologías para mostrar, medir y personalizar anuncios, de acuerdo con su configuración y sus políticas. El operador debe configurar los mensajes de consentimiento de una CMP certificada por Google cuando sea obligatorio en la región del visitante. Esta aplicación no implementa por sí misma una CMP ni solicita consentimiento para anuncios personalizados.</p>
           <h2>Registros técnicos</h2>
@@ -36,14 +36,14 @@
           {% else %}
             <p>El operador aún no ha configurado una dirección de contacto para privacidad. Antes de publicar el servicio para usuarios, configura <code>PRIVACY_CONTACT_EMAIL</code> con una dirección supervisada.</p>
           {% endif %}
-          <p>Al utilizar LectorIA, ten en cuenta las condiciones del proveedor de IA, del alojamiento y de los servicios publicitarios que estén activos.</p>
+          <p>Al utilizar LectorIA, ten en cuenta las condiciones del proveedor de alojamiento y de los servicios publicitarios que estén activos.</p>
         {% else %}
           <h1>Privacy</h1>
           <p>This page explains how LectorIA processes information when you use the service. Do not upload sensitive, confidential, or personal documents unless you are authorized to share them.</p>
           <h2>Documents and text</h2>
           <p>Pasted text is processed to answer your request. To extract text from a PDF, the file is validated, written temporarily to server temporary storage, and removed after extraction. The application does not maintain a document library or retain documents for later use. Results and question history remain in your browser page and are not intentionally saved to a LectorIA account.</p>
-          <h2>AI processing</h2>
-          <p>Text needed for analysis and questions is sent to Hugging Face Inference Providers using the model configured by the service operator. The provider receives request content and may process it under its own terms and privacy practices. Review the provider's current documentation and terms before submitting documents. LectorIA does not control third-party processing.</p>
+          <h2>Analysis processing</h2>
+          <p>Analysis and answers are generated on the server using text-processing rules; no AI model is used and document content is not sent to an inference provider. PDFs are uploaded to the service for text extraction. The hosting provider may process requests and retain technical logs under its own terms and privacy practices.</p>
           <h2>Advertising and cookies</h2>
           <p>If the operator enables Google AdSense, Google and its partners may use cookies, identifiers, or other technologies to serve, measure, and personalize ads under their settings and policies. The operator must configure Google-certified CMP consent messages where required for a visitor's region. This application does not itself implement a CMP or collect consent for personalized advertising.</p>
           <h2>Technical logs</h2>
@@ -54,7 +54,7 @@
           {% else %}
             <p>The operator has not configured a privacy contact address. Before publishing the service for users, configure <code>PRIVACY_CONTACT_EMAIL</code> with a monitored address.</p>
           {% endif %}
-          <p>When using LectorIA, also consider the terms of the AI provider, hosting provider, and any active advertising services.</p>
+          <p>When using LectorIA, also consider the hosting provider's terms and any active advertising services.</p>
         {% endif %}
       </main>
     </div>

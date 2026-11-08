@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import ai_utils
 
@@ -35,158 +35,85 @@ class DocumentChunkingTests(unittest.TestCase):
         self.assertEqual([chunk["page_start"] for chunk in chunks], [2, 3])
 
 
-class AIAnalysisTests(unittest.TestCase):
-    def test_analysis_consolidates_all_pages_and_returns_thematic_labels(self):
-        final_result = {
-            "summary": "A document about learning and schools.",
-            "keywords": ["learning", "schools"],
-            "classification": [
-                {"label": "Education", "score": 0.94},
-                {"label": "neutral", "score": 0.6},
-            ],
-            "language": "en",
-        }
-        with (
-            patch.object(
-                ai_utils,
-                "_map_chunks",
-                side_effect=lambda chunks: [
-                    {
-                        "summary": f"Page {chunk['page_start']} summary.",
-                        "keywords": ["learning" if chunk["page_start"] == 1 else "schools"],
-                    }
-                    for chunk in chunks
-                ],
-            ) as map_chunks,
-            patch.object(ai_utils, "_reduce_summaries", return_value="Document summary."),
-            patch.object(ai_utils, "_run_json", return_value=final_result),
-        ):
-            result = ai_utils.analyze_document("", pages=["First page", "Second page"])
+class LocalAnalysisTests(unittest.TestCase):
+    def test_analysis_is_local_and_returns_summary_keywords_and_topics(self):
+        text = (
+            "La educación ayuda a los estudiantes. "
+            "Los estudiantes aprenden en la escuela y la universidad."
+        )
 
-        self.assertEqual(map_chunks.call_count, 1)
+        result = ai_utils.analyze_document(text)
+
+        self.assertEqual(result["summary"]["summary"], text)
+        self.assertIn("estudiantes", result["keywords"]["keywords"])
+        self.assertEqual(result["classification"]["labels"][0]["label"], "Education")
+        self.assertEqual(result["summary"]["source"], "local")
+        self.assertEqual(result["keywords"]["source"], "local")
+        self.assertEqual(result["classification"]["source"], "local")
+        self.assertEqual(result["summary"]["model"], "Local")
+        self.assertEqual(result["language"], "es")
+
+    def test_pdf_references_are_preserved_for_analysis(self):
+        result = ai_utils.analyze_document(
+            "",
+            pages=[
+                "La historia describe una antigua ciudad.",
+                "La educación se impartía en la escuela.",
+            ],
+        )
+
         self.assertEqual(result["summary"]["references"], [1, 2])
         self.assertEqual(result["summary"]["chunks_count"], 2)
-        self.assertEqual(result["keywords"]["keywords"], ["learning", "schools"])
-        self.assertEqual(result["classification"]["labels"], [{"label": "Education", "score": 0.94}])
-        self.assertEqual(result["classification"]["source"], "huggingface")
 
-    def test_follow_up_questions_use_real_chat_roles_and_valid_page_citations(self):
-        messages_seen = []
-        token_limits = []
+    def test_summary_selects_relevant_sentences_for_long_documents(self):
+        text = (
+            "Los volcanes expulsan lava durante las erupciones. "
+            "La lava puede alcanzar temperaturas muy altas y transformar el terreno. "
+            "Los volcanes se forman por el movimiento de placas tectónicas. "
+        ) * 12
 
-        def fake_chat(messages, max_tokens=900):
-            messages_seen.extend(messages)
-            token_limits.append(max_tokens)
-            return '{"answer":"The report describes a river study [p. 2].","references":[2,99]}'
+        result = ai_utils.summarize_text(text)
 
-        with patch.object(ai_utils, "_call_chat", side_effect=fake_chat):
-            result = ai_utils.answer_question(
-                "What does the report study?",
-                "[Página 1] A history of music.\n[Página 2] The report studies a river.",
-                history=[
-                    {"role": "user", "content": "Summarize it."},
-                    {"role": "assistant", "content": "It covers two topics."},
-                ],
-            )
+        self.assertLess(len(result["summary"]), len(text))
+        self.assertIn("volcanes", result["summary"])
+        self.assertEqual(result["source"], "local")
 
-        self.assertEqual([message["role"] for message in messages_seen], ["system", "user", "assistant", "user"])
-        self.assertEqual(token_limits, [900])
+    def test_question_answers_with_matching_extracts_and_page_reference(self):
+        result = ai_utils.answer_question(
+            "¿Qué estudian los investigadores?",
+            "",
+            pages=[
+                "La investigación analiza el clima y la temperatura.",
+                "Los investigadores estudian cómo cambia el clima en verano.",
+            ],
+        )
+
+        self.assertIn("investigadores estudian", result["answer"])
         self.assertEqual(result["references"], [2])
-        self.assertEqual(result["source"], "huggingface")
+        self.assertEqual(result["source"], "local")
 
-    def test_unavailable_token_does_not_produce_a_heuristic_answer(self):
-        with patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": ""}):
-            with self.assertRaises(ai_utils.AIServiceError) as error:
-                ai_utils._call_chat([{"role": "user", "content": "test"}])
-
-        self.assertEqual(error.exception.code, "missing_token")
-        self.assertEqual(error.exception.status_code, 503)
-
-    def test_chat_request_uses_openai_compatible_roles_and_model(self):
-        response = Mock()
-        response.ok = True
-        response.json.return_value = {"choices": [{"message": {"content": "Answer"}}]}
-        messages = [
-            {"role": "system", "content": "Rules"},
-            {"role": "user", "content": "Question"},
-        ]
-        with (
-            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
-            patch.object(ai_utils.requests, "post", return_value=response) as post,
-        ):
-            content = ai_utils._call_chat(messages)
-
-        self.assertEqual(content, "Answer")
-        self.assertEqual(
-            post.call_args.args[0],
-            "https://router.huggingface.co/v1/chat/completions",
-        )
-        self.assertEqual(post.call_args.kwargs["json"]["messages"], messages)
-        self.assertEqual(post.call_args.kwargs["json"]["model"], ai_utils.DEFAULT_CHAT_MODEL)
-        self.assertEqual(
-            post.call_args.kwargs["headers"]["Authorization"],
-            "Bearer test-token",
+    def test_question_reports_insufficient_evidence_without_inventing_answer(self):
+        result = ai_utils.answer_question(
+            "¿Quién ganó el torneo?",
+            "El documento describe el clima y las estaciones del año.",
         )
 
-    def test_provider_rate_limit_has_a_retryable_error_code(self):
-        response = Mock()
-        response.ok = False
-        response.status_code = 429
-        response.json.return_value = {"error": "rate limit"}
-        with (
-            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
-            patch.object(ai_utils.requests, "post", return_value=response),
-        ):
-            with self.assertRaises(ai_utils.AIServiceError) as error:
-                ai_utils._call_chat([{"role": "user", "content": "test"}])
+        self.assertIn("No encuentro evidencia suficiente", result["answer"])
+        self.assertEqual(result["references"], [])
 
-        self.assertEqual(error.exception.code, "provider_rate_limit")
-        self.assertEqual(error.exception.status_code, 429)
+    def test_analysis_has_no_external_http_client_dependency(self):
+        result = ai_utils.analyze_document(
+            "La ciencia estudia la naturaleza y sus fenómenos."
+        )
+        self.assertEqual(result["summary"]["source"], "local")
+        self.assertFalse(hasattr(ai_utils, "requests"))
 
-    def test_provider_billing_failure_has_a_specific_error(self):
-        response = Mock()
-        response.ok = False
-        response.status_code = 402
-        response.json.return_value = {"error": "payment required"}
-        with (
-            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
-            patch.object(ai_utils.requests, "post", return_value=response),
-        ):
-            with self.assertRaises(ai_utils.AIServiceError) as error:
-                ai_utils._call_chat([{"role": "user", "content": "test"}])
+    def test_empty_document_is_rejected(self):
+        with self.assertRaises(ai_utils.AIServiceError) as error:
+            ai_utils.analyze_document("")
 
-        self.assertEqual(error.exception.code, "provider_billing")
-        self.assertEqual(error.exception.status_code, 503)
-
-    def test_unrelated_provider_validation_error_is_not_reported_as_model_unavailable(self):
-        response = Mock()
-        response.ok = False
-        response.status_code = 422
-        response.json.return_value = {"error": "Invalid value for temperature"}
-        with (
-            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
-            patch.object(ai_utils.requests, "post", return_value=response),
-        ):
-            with self.assertRaises(ai_utils.AIServiceError) as error:
-                ai_utils._call_chat([{"role": "user", "content": "test"}])
-
-        self.assertEqual(error.exception.code, "provider_error")
-        self.assertEqual(error.exception.status_code, 502)
-
-    def test_provider_model_error_is_reported_as_model_unavailable(self):
-        response = Mock()
-        response.ok = False
-        response.status_code = 422
-        response.json.return_value = {"error": "Model is not available"}
-        with (
-            patch.dict("os.environ", {"HUGGINGFACE_API_TOKEN": "test-token"}),
-            patch.object(ai_utils.requests, "post", return_value=response),
-        ):
-            with self.assertRaises(ai_utils.AIServiceError) as error:
-                ai_utils._call_chat([{"role": "user", "content": "test"}])
-
-        self.assertEqual(error.exception.code, "model_unavailable")
-        self.assertEqual(error.exception.status_code, 503)
+        self.assertEqual(error.exception.code, "empty_document")
+        self.assertEqual(error.exception.status_code, 400)
 
 
 if __name__ == "__main__":

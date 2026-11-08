@@ -4,8 +4,9 @@ const translations = {
     homeLabel: 'LectorIA home', navLabel: 'Document sections', workspaceLabel: 'Document analysis workspace',
     adLabel: 'Advertisement', languageLabel: 'Interface language', eyebrow: 'Your thoughtful document reader',
     heroTitleFirst: 'Understand every', heroTitleSecond: 'document, faster.',
-    heroDescription: 'Turn a PDF or pasted text into a grounded summary, meaningful keywords, topic insights, and answers you can trace back to the source.',
-    uploadPdf: 'Upload PDF', analyzeText: 'Analyze text', privacyShort: 'Your document is processed temporarily and is not stored by LectorIA.',
+    heroDescription: 'Analyze PDFs and text with local, rule-based summaries, keywords, topics, and answers. No AI model or external inference service is used.',
+    uploadPdf: 'Upload PDF', analyzeText: 'Analyze text', privacyShort: 'Text is processed by the app without sending it to an AI model.',
+    localModeBadge: 'Local analysis · no AI',
     privacyPolicy: 'Privacy',
     sourceLabel: 'Your source', addDocument: 'Add a document', choosePdf: 'Choose PDF',
     textInputLabel: 'Document text', textPlaceholder: 'Paste text from a document here...',
@@ -20,7 +21,7 @@ const translations = {
     noDocument: 'No document', pagesLabel: 'Pages', sizeLabel: 'Size',
     footerPrivacy: 'Documents are processed temporarily for analysis. Avoid uploading sensitive personal information.',
     privacyDetailsTitle: 'Privacy and advertising',
-    privacyDetails: "PDFs are temporarily extracted and removed after processing. Document text is sent to Hugging Face Inference Providers to generate results. LectorIA does not retain documents. If ads are enabled, Google may use cookies or similar technologies; the publisher must configure Google's certified consent messaging where required. Avoid uploading sensitive information.",
+    privacyDetails: "PDFs are temporarily extracted and removed after processing. Analysis uses local text-processing rules and does not send document text to an AI model or inference provider. The hosting provider may process requests and technical logs. If ads are enabled, Google may use cookies or similar technologies; the publisher must configure Google's certified consent messaging where required. Avoid uploading sensitive information.",
     footerMade: 'Made for clearer reading.', sourceCode: 'Open source', adPlaceholder: 'Advertisement',
     statusReadingPdf: 'Reading PDF...', statusPdfLoaded: 'PDF loaded', statusAnalyzing: 'Analyzing every section...',
     statusAnalyzed: 'Analysis complete', statusError: 'Analysis failed', statusNeedsAnalysis: 'Changes need analysis',
@@ -30,15 +31,7 @@ const translations = {
     questionErrorLabel: 'Could not answer', referenceLabel: 'Source pages', topicNeutral: 'Other',
     alertNoText: 'Add or upload document text before analysis.', questionNoText: 'Add or upload a document before asking a question.',
     errors: {
-      missing_token: 'AI analysis is not configured yet. Add HUGGINGFACE_API_TOKEN in the deployment environment.',
-      invalid_token: 'The Hugging Face token was rejected. Check that it has Inference Providers access.',
-      model_unavailable: 'The configured AI model is unavailable from Hugging Face Inference Providers.',
-      provider_rate_limit: 'The AI provider is busy. Wait a moment and retry.',
-      provider_billing: 'The Hugging Face account cannot use this inference provider. Review its billing or usage limits.',
-      provider_timeout: 'The AI provider took too long to respond. Please retry.',
-      provider_unavailable: 'The AI provider could not be reached. Check the connection and retry.',
-      provider_error: 'The AI provider could not complete the request. Please retry.',
-      provider_context_limit: 'The model could not accept this amount of context. Try a shorter document.',
+      local_processing_error: 'Local analysis could not complete. Please retry.',
       document_too_large: 'This document exceeds the current analysis limit. Split it into smaller documents and retry.',
       empty_document: 'No readable document text was provided.',
       empty_question: 'Write a question before consulting the document.',
@@ -50,8 +43,6 @@ const translations = {
       invalid_pdf: 'The PDF could not be read. Check that the file is valid and not protected.',
       missing_file: 'Choose a PDF file first.',
       request_too_large: 'The request exceeds the configured upload limit.',
-      invalid_provider_response: 'The AI provider returned an incomplete response. Please retry.',
-      empty_provider_response: 'The AI provider returned an empty response. Please retry.'
     },
     topics: {
       Technology: 'Technology', Science: 'Science', Education: 'Education', Business: 'Business',
@@ -64,8 +55,9 @@ const translations = {
     homeLabel: 'Inicio de LectorIA', navLabel: 'Secciones del documento', workspaceLabel: 'Área de análisis del documento',
     adLabel: 'Publicidad', languageLabel: 'Idioma de la interfaz', eyebrow: 'Tu lector inteligente de documentos',
     heroTitleFirst: 'Comprende cada', heroTitleSecond: 'documento, más rápido.',
-    heroDescription: 'Convierte un PDF o texto en un resumen fundamentado, conceptos clave, temas y respuestas vinculadas con la fuente.',
-    uploadPdf: 'Subir PDF', analyzeText: 'Analizar texto', privacyShort: 'LectorIA procesa el documento temporalmente y no lo almacena.',
+    heroDescription: 'Analiza PDF y texto con resúmenes, conceptos, temas y respuestas basados en reglas locales. No se usa un modelo de IA ni un servicio externo de inferencia.',
+    uploadPdf: 'Subir PDF', analyzeText: 'Analizar texto', privacyShort: 'La aplicación procesa el texto sin enviarlo a un modelo de IA.',
+    localModeBadge: 'Análisis local · sin IA',
     privacyPolicy: 'Privacidad',
     sourceLabel: 'Tu fuente', addDocument: 'Añade un documento', choosePdf: 'Elegir PDF',
     textInputLabel: 'Texto del documento', textPlaceholder: 'Pega aquí el texto de un documento...',
@@ -80,7 +72,7 @@ const translations = {
     noDocument: 'Sin documento', pagesLabel: 'Páginas', sizeLabel: 'Tamaño',
     footerPrivacy: 'Los documentos se procesan temporalmente para el análisis. Evita subir información personal sensible.',
     privacyDetailsTitle: 'Privacidad y publicidad',
-    privacyDetails: 'Los PDF se extraen temporalmente y se eliminan al terminar el procesamiento. El texto se envía a Hugging Face Inference Providers para generar resultados. LectorIA no conserva los documentos. Si se habilitan anuncios, Google puede utilizar cookies o tecnologías similares; el propietario debe configurar los mensajes de consentimiento certificados de Google donde sea necesario. Evita subir información sensible.',
+    privacyDetails: 'Los PDF se extraen temporalmente y se eliminan al terminar el procesamiento. El análisis utiliza reglas locales de procesamiento de texto y no envía el contenido a un modelo de IA ni a un proveedor de inferencia. El proveedor de alojamiento puede procesar solicitudes y registros técnicos. Si se habilitan anuncios, Google puede utilizar cookies o tecnologías similares; el propietario debe configurar los mensajes de consentimiento certificados de Google donde sea necesario. Evita subir información sensible.',
     footerMade: 'Hecho para leer con claridad.', sourceCode: 'Código abierto', adPlaceholder: 'Publicidad',
     statusReadingPdf: 'Leyendo el PDF...', statusPdfLoaded: 'PDF cargado', statusAnalyzing: 'Analizando todas las secciones...',
     statusAnalyzed: 'Análisis completado', statusError: 'El análisis falló', statusNeedsAnalysis: 'Hay cambios por analizar',
@@ -90,15 +82,7 @@ const translations = {
     questionErrorLabel: 'No se pudo responder', referenceLabel: 'Páginas de referencia', topicNeutral: 'Otro',
     alertNoText: 'Añade o sube texto antes de analizar.', questionNoText: 'Añade o sube un documento antes de hacer una pregunta.',
     errors: {
-      missing_token: 'El análisis con IA no está configurado. Añade HUGGINGFACE_API_TOKEN al entorno de despliegue.',
-      invalid_token: 'Hugging Face rechazó el token. Comprueba que tenga acceso a Inference Providers.',
-      model_unavailable: 'El modelo configurado no está disponible en Hugging Face Inference Providers.',
-      provider_rate_limit: 'El proveedor de IA está ocupado. Espera un momento e inténtalo de nuevo.',
-      provider_billing: 'La cuenta de Hugging Face no puede usar este proveedor de inferencia. Revisa la facturación o los límites de uso.',
-      provider_timeout: 'El proveedor de IA tardó demasiado en responder. Inténtalo de nuevo.',
-      provider_unavailable: 'No se pudo conectar con el proveedor de IA. Comprueba la conexión e inténtalo de nuevo.',
-      provider_error: 'El proveedor de IA no pudo completar la solicitud. Inténtalo de nuevo.',
-      provider_context_limit: 'El modelo no pudo aceptar tanto contexto. Prueba con un documento más corto.',
+      local_processing_error: 'El análisis local no pudo completarse. Inténtalo de nuevo.',
       document_too_large: 'El documento supera el límite de análisis actual. Divídelo en documentos más pequeños.',
       empty_document: 'No se proporcionó texto legible para analizar.',
       empty_question: 'Escribe una pregunta antes de consultar el documento.',
@@ -110,8 +94,6 @@ const translations = {
       invalid_pdf: 'No se pudo leer el PDF. Comprueba que sea válido y no esté protegido.',
       missing_file: 'Elige un archivo PDF primero.',
       request_too_large: 'La solicitud supera el límite de carga configurado.',
-      invalid_provider_response: 'El proveedor de IA devolvió una respuesta incompleta. Inténtalo de nuevo.',
-      empty_provider_response: 'El proveedor de IA devolvió una respuesta vacía. Inténtalo de nuevo.'
     },
     topics: {
       Technology: 'Tecnología', Science: 'Ciencia', Education: 'Educación', Business: 'Negocios',
@@ -248,12 +230,12 @@ const requestJson = async (url, options) => {
   try {
     data = await response.json();
   } catch {
-    const error = new Error(errorText('provider_error'));
-    error.code = 'provider_error';
+    const error = new Error(errorText('local_processing_error'));
+    error.code = 'local_processing_error';
     throw error;
   }
   if (!response.ok) {
-    const error = new Error(data?.code ? errorText(data.code) : (data?.error || errorText('provider_error')));
+    const error = new Error(data?.code ? errorText(data.code) : (data?.error || errorText('local_processing_error')));
     error.code = data.code;
     throw error;
   }
@@ -360,7 +342,7 @@ const renderAnalysis = (data) => {
   renderKeywords(data.keywords?.keywords || []);
   renderClassification(data.classification?.labels || []);
   if (summary.model) {
-    modelBadge.textContent = summary.model;
+    modelBadge.textContent = summary.source === 'local' ? t('localModeBadge') : summary.model;
     modelBadge.hidden = false;
   }
 };

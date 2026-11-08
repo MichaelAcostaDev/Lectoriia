@@ -5,7 +5,7 @@
 
   **Read less noise. Understand more.**
 
-  Bilingual AI-assisted analysis for PDFs and plain text.
+  Bilingual local analysis for PDFs and plain text, with no AI model.
 
   [Live site](https://lectoriia.vercel.app/) · [Source code](https://github.com/MichaelAcostaDev/LectorIA)
 
@@ -14,32 +14,17 @@
   ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 </div>
 
-## Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Quickstart](#quickstart)
-- [Configuration](#configuration)
-- [API and health checks](#api-and-health-checks)
-- [Deployment](#deployment)
-- [Privacy and security](#privacy-and-security)
-- [Testing](#testing)
-- [Project structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Overview
 
-LectorIA converts a PDF or pasted text into a grounded summary, key concepts, thematic classification, and answers with page references when available. The interface and analysis support English and Spanish.
+LectorIA converts a PDF or pasted text into an extractive summary, frequent key terms, rule-based thematic labels, and answers selected from matching sentences with page references when available. The interface supports English and Spanish.
 
-AI features use the configured Hugging Face Inference Providers chat-completion model. If the token, model, or provider is unavailable, the application reports an explicit error; it does not present heuristic output as a successful AI result. Scanned PDFs without an extractable text layer are not OCR-processed.
+Analysis runs in the Flask application using deterministic text-processing rules. It does not load or call an AI model and does not send document text to an inference provider. Results are extractive and heuristic; they are not generated or interpreted by AI. Scanned PDFs without an extractable text layer are not OCR-processed.
 
 ## Features
 
-- Analyze PDFs and pasted text with chunking for longer documents.
-- Extract concepts and classify document topics.
-- Ask follow-up questions grounded in relevant excerpts and recent conversation turns.
+- Analyze PDFs and pasted text locally with chunking for longer documents.
+- Extract frequent terms and classify topics with bilingual keyword rules.
+- Answer questions by retrieving sentences that share words with the question.
 - Preserve PDF page numbers for references where available.
 - Switch between English and Spanish, with browser-language detection.
 - Serve optional AdSense Auto ads or configured manual slots.
@@ -53,13 +38,12 @@ flowchart LR
     Browser[Browser: bilingual UI] -->|PDF or text| Flask[Flask application]
     Flask -->|PDF upload| Temp[Temporary file extraction]
     Temp -->|Extracted text| Flask
-    Flask -->|Analysis and questions| HF[Hugging Face Inference Providers]
-    HF -->|Model response| Flask
+    Flask -->|Local rules: summary, keywords, topics, answers| Flask
     Flask -->|Results| Browser
     Browser -->|Optional ads| Google[Google AdSense]
 ```
 
-Documents and questions are not stored in a LectorIA user account. Submitted text is sent to the configured AI provider for inference and is subject to that provider's terms and data-handling practices.
+Documents are processed by the application server and are not sent to an AI model. The hosting provider may process requests and technical logs according to its own terms.
 
 ## Quickstart
 
@@ -67,7 +51,6 @@ Documents and questions are not stored in a LectorIA user account. Submitted tex
 
 - Python 3.10 or later
 - pip
-- A Hugging Face token with Inference Providers access for AI analysis
 
 Clone the repository and create an environment:
 
@@ -83,7 +66,6 @@ Activate the environment and install dependencies:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-Copy-Item .env.example .env
 python -m pip install -r requirements.txt
 ```
 
@@ -91,26 +73,23 @@ python -m pip install -r requirements.txt
 
 ```bash
 source .venv/bin/activate
-cp .env.example .env
 python -m pip install -r requirements.txt
 ```
 
-Edit `.env` and set `HUGGINGFACE_API_TOKEN` if you want to use AI features. Start the server:
+Start the server:
 
 ```bash
 python app.py
 ```
 
-Open [http://localhost:5000](http://localhost:5000). Without a token, the UI and PDF text extraction remain available, but requests that require AI return a configuration error.
+Open [http://localhost:5000](http://localhost:5000). Analysis uses local text-processing rules and does not require an AI account, API key, or model.
 
 ## Configuration
 
-Copy `.env.example` to `.env` for local development. Configure production variables in the hosting provider's secret/environment settings, not in source files.
+No AI-provider configuration is needed. Optional server settings can be provided through environment variables or a local `.env` file:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `HUGGINGFACE_API_TOKEN` | For AI | Fine-grained Hugging Face token with Inference Providers permission. Keep it server-side. |
-| `HF_CHAT_MODEL` | No | Chat-completion model ID. Defaults to `Qwen/Qwen2.5-7B-Instruct`. |
 | `PORT` | No | Local Flask port; defaults to `5000`. |
 | `FLASK_DEBUG` | No | Set to `true` only for local development. |
 | `ADSENSE_PUBLISHER_ID` | For ads | Approved publisher ID, in `pub-…` or `ca-pub-…` format. |
@@ -121,12 +100,12 @@ Copy `.env.example` to `.env` for local development. Configure production variab
 | `ADSENSE_SLOT_FOOTER` | For that slot | Optional manual slot near the footer. |
 | `PRIVACY_CONTACT_EMAIL` | Before public launch | Monitored contact address shown on the privacy page. |
 
-Ad slots can be left blank. In local development, unconfigured locations show layout placeholders; in production they stay hidden. The Hugging Face token is never passed to the browser. The privacy page explicitly indicates when no contact address has been configured.
+Ad slots can be left blank. In local development, unconfigured locations show layout placeholders; in production they stay hidden. The privacy page indicates when no contact address has been configured.
 
 ## API and health checks
 
-- `GET /api/health` reports Flask availability and whether the Hugging Face token is configured. Provider connectivity and model operation are `not_checked`; this endpoint does **not** make an inference request.
-- `POST /api/health/ai` performs a minimal real model request. It requires `Authorization: Bearer <HUGGINGFACE_API_TOKEN>` and may incur provider usage. Keep this administrative check private; never call it from the browser or publish the token. Its provider/model status is `not_checked` without a token and `unknown` when connectivity times out.
+- `GET /api/health` reports Flask availability and confirms analysis mode is local with no external model.
+- `POST /api/health/ai` is retained for compatibility and reports local analysis availability; it makes no external request and requires no authorization.
 - `GET /ads.txt` serves the Google seller declaration when a valid publisher ID is configured. Otherwise it returns a non-cacheable `404`.
 - `GET /privacy` provides the English or Spanish privacy information.
 
@@ -135,22 +114,18 @@ Ad slots can be left blank. In local development, unconfigured locations show la
 ### Vercel
 
 1. Import the repository into Vercel and retain the included Python build and catch-all route configuration.
-2. Set `HUGGINGFACE_API_TOKEN` in the Vercel project's server-side environment variables. Set `HF_CHAT_MODEL` only if you want to override the default. If a deployment already has `HF_CHAT_MODEL` configured and reports that the model is unavailable, update it to `Qwen/Qwen2.5-7B-Instruct` or remove the override, then redeploy.
-3. Deploy, then check `/api/health`. To test actual inference, call `/api/health/ai` from a trusted environment with the bearer token; this makes a provider request and is not a public uptime probe.
+2. No AI provider credentials or model settings are required.
+3. Deploy and check `/api/health`; the response reports local analysis mode.
 4. Before serving ads, obtain AdSense approval. Configure `ADSENSE_PUBLISHER_ID`, optionally `ADSENSE_AUTO_ADS=true`, and any manual slot IDs, then redeploy.
 5. Configure Google AdSense privacy and consent messaging. Google requires an approved Google-certified consent management platform for applicable users in the EEA, UK, and Switzerland. This application does not implement a CMP.
 6. Set `PRIVACY_CONTACT_EMAIL` to a monitored address before making the service available publicly.
 
-The PDF file-size limit is 4 MiB on Vercel and 15 MiB in local deployments. The HTTP request limit on Vercel is 4,500,000 bytes to leave room for multipart upload overhead; requests larger than that return `413`. AI analysis is limited to 180,000 characters and 32 generated excerpts.
-
-Configuring environment variables does not itself verify provider inference, AdSense approval, or a successful production deployment. Confirm each item in the target account and deployment.
+The PDF file-size limit is 4 MiB on Vercel and 15 MiB in local deployments. The HTTP request limit on Vercel is 4,500,000 bytes to leave room for multipart upload overhead; requests larger than that return `413`. Text analysis is limited to 180,000 characters and 32 excerpts. Local analysis has no AI-provider usage fees, but it is not unlimited: hosting quotas, request limits, and processing time still apply.
 
 ## Privacy and security
 
-- Keep all tokens in environment variables. `.env` is ignored by Git; `.env.example` contains placeholders only.
-- If a token was exposed, revoke it and create a replacement. Do not copy the exposed token into deployment settings or commit history.
-- Uploaded PDFs are size-checked and temporarily written for text extraction, then deleted. Extracted text is sent to the configured Hugging Face provider for requested AI analysis.
-- Review current Hugging Face inference-provider data-handling terms before sending documents. Avoid sensitive or confidential content.
+- Analysis does not use or require AI-provider tokens.
+- Uploaded PDFs are size-checked and temporarily written for text extraction, then deleted. Extracted text is processed by the application server and is not sent to an AI model or inference provider.
 - If AdSense is enabled, Google and its partners may use cookies or similar technologies. Configure a certified consent platform where required.
 - Use the [privacy page](/privacy) for the service's current processing disclosures. Configure `PRIVACY_CONTACT_EMAIL` before public launch.
 - Do not put credentials, real documents, or private user data in issues, logs, screenshots, or pull requests. Report security issues privately to the repository owner.
@@ -163,13 +138,13 @@ Run the unit tests:
 python -m unittest discover -s tests -v
 ```
 
-The suite covers document chunking and analysis behavior, API validation, PDF upload errors, health-check authorization, AdSense configuration, and privacy-page rendering. Unit tests mock the external AI provider; they do not prove that a live provider request or deployment works.
+The suite covers document chunking, local extractive analysis, question retrieval, API validation, PDF upload errors, AdSense configuration, and privacy-page rendering. No external AI provider is used.
 
 ## Project structure
 
 ```text
 LectorIA/
-├── ai_utils.py          # Hugging Face requests, prompts, chunking, and analysis
+├── ai_utils.py          # Local text processing, chunking, and analysis
 ├── app.py               # Flask UI, API routes, health checks, and ads.txt
 ├── pdf_utils.py         # PDF validation and temporary text extraction
 ├── requirements.txt
@@ -200,4 +175,4 @@ Avoid including real documents, API tokens, publisher IDs, or other sensitive da
 
 ## License
 
-LectorIA's code is released under the [MIT License](./LICENSE). Model weights, Hugging Face services, and third-party assets remain subject to their own terms and licenses.
+LectorIA's code is released under the [MIT License](./LICENSE). Hosting and third-party assets remain subject to their own terms and licenses.

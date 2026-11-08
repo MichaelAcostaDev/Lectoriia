@@ -3,7 +3,6 @@ import os
 import unittest
 from unittest.mock import patch
 
-from ai_utils import AIServiceError
 from app import app
 
 
@@ -12,81 +11,36 @@ class FlaskRoutesTests(unittest.TestCase):
         app.config.update(TESTING=True)
         self.client = app.test_client()
 
-    def test_health_endpoint(self):
+    def test_health_endpoint_reports_local_non_ai_analysis(self):
         response = self.client.get("/api/health")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["status"], "ok")
         self.assertEqual(response.get_json()["application"], "operational")
-        self.assertIn("credentials_configured", response.get_json()["ai"])
-        self.assertEqual(response.get_json()["ai"]["provider_reachable"], "not_checked")
+        self.assertEqual(
+            response.get_json()["analysis"],
+            {"mode": "local", "external_model": False},
+        )
 
-    def test_ai_health_requires_authorization(self):
-        with (
-            patch("app.get_hf_token", return_value="test-token"),
-            patch("app._call_chat") as call_chat,
-        ):
-            response = self.client.post("/api/health/ai")
-
-        self.assertEqual(response.status_code, 401)
-        call_chat.assert_not_called()
-        self.assertNotIn(b"test-token", response.data)
-
-    def test_ai_health_runs_a_minimal_model_check_when_authorized(self):
-        with (
-            patch("app.get_hf_token", return_value="test-token"),
-            patch("app._call_chat", return_value="OK") as call_chat,
-        ):
-            response = self.client.post(
-                "/api/health/ai",
-                headers={"Authorization": "Bearer test-token"},
-            )
+    def test_legacy_ai_health_endpoint_reports_local_engine_without_authentication(self):
+        response = self.client.post("/api/health/ai")
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.get_json()["ai"],
-            {
-                "credentials_configured": True,
-                "provider_reachable": True,
-                "model_operational": True,
-            },
+            response.get_json()["analysis"],
+            {"mode": "local", "available": True, "external_model": False},
         )
-        call_chat.assert_called_once()
 
-    def test_ai_health_fails_explicitly_when_token_is_missing(self):
-        with (
-            patch("app.get_hf_token", return_value=""),
-            patch("app._call_chat") as call_chat,
-        ):
-            response = self.client.post("/api/health/ai")
+    def test_analyze_endpoint_returns_local_results_without_credentials(self):
+        response = self.client.post(
+            "/api/analyze-text",
+            json={"text": "La ciencia estudia la naturaleza y sus fenómenos."},
+        )
 
-        self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.get_json()["error_code"], "missing_token")
-        self.assertEqual(response.get_json()["ai"]["provider_reachable"], "not_checked")
-        call_chat.assert_not_called()
-
-    def test_ai_health_does_not_claim_provider_is_unreachable_on_timeout(self):
-        error = AIServiceError("Provider timeout.", "provider_timeout", 504)
-        with (
-            patch("app.get_hf_token", return_value="test-token"),
-            patch("app._call_chat", side_effect=error),
-        ):
-            response = self.client.post(
-                "/api/health/ai",
-                headers={"Authorization": "Bearer test-token"},
-            )
-
-        self.assertEqual(response.status_code, 504)
-        self.assertEqual(response.get_json()["ai"]["provider_reachable"], "unknown")
-        self.assertNotIn(b"Provider timeout", response.data)
-
-    def test_analyze_endpoint_reports_provider_configuration_errors(self):
-        error = AIServiceError("AI token is missing.", "missing_token", 503)
-        with patch("app.analyze_document", side_effect=error):
-            response = self.client.post("/api/analyze-text", json={"text": "A document."})
-
-        self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.get_json()["code"], "missing_token")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["summary"]["source"], "local")
+        self.assertEqual(response.get_json()["summary"]["model"], "Local")
+        self.assertEqual(response.get_json()["classification"]["source"], "local")
 
     def test_analysis_rejects_non_string_document_text(self):
         response = self.client.post("/api/analyze-text", json={"text": 42})

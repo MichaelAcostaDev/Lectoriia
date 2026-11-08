@@ -1,10 +1,10 @@
-import hmac
 import logging
 import os
 import re
 from typing import Any
 
 from flask import Flask, jsonify, make_response, render_template, request
+from dotenv import load_dotenv
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from ai_utils import (
@@ -13,12 +13,11 @@ from ai_utils import (
     analyze_document,
     classify_text,
     extract_keywords,
-    get_hf_token,
-    has_hf_token,
     summarize_text,
-    _call_chat,
 )
 from pdf_utils import PDFProcessingError, extract_pdf_text
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
@@ -122,81 +121,23 @@ def health():
         {
             "status": "ok",
             "application": "operational",
-            "ai": {
-                "credentials_configured": has_hf_token(),
-                "provider_reachable": "not_checked",
-                "model_operational": "not_checked",
-            },
+            "analysis": {"mode": "local", "external_model": False},
         }
     )
 
 
 @app.route("/api/health/ai", methods=["POST"])
-def ai_health():
-    token = get_hf_token()
-    if not token:
-        return jsonify(
-            {
-                "application": "operational",
-                "ai": {
-                    "credentials_configured": False,
-                    "provider_reachable": "not_checked",
-                    "model_operational": "not_checked",
-                },
-                "error_code": "missing_token",
-            }
-        ), 503
-    authorization = request.headers.get("Authorization", "").encode("utf-8")
-    expected_authorization = f"Bearer {token}".encode("utf-8")
-    if not hmac.compare_digest(authorization, expected_authorization):
-        return jsonify({"error": "Valid health-check authorization is required."}), 401
-
-    try:
-        answer = _call_chat(
-            [
-                {
-                    "role": "system",
-                    "content": "Reply with exactly the word OK and nothing else.",
-                },
-                {"role": "user", "content": "Connection health check."},
-            ],
-            max_tokens=8,
-        )
-    except AIServiceError as error:
-        logger.warning("AI health check failed (code=%s)", error.code)
-        provider_reachable = (
-            "unknown"
-            if error.code in {"provider_timeout", "provider_unavailable"}
-            else True
-        )
-        model_operational = (
-            "unknown"
-            if provider_reachable == "unknown"
-            else False
-        )
-        return jsonify(
-            {
-                "application": "operational",
-                "ai": {
-                    "credentials_configured": True,
-                    "provider_reachable": provider_reachable,
-                    "model_operational": model_operational,
-                },
-                "error_code": error.code,
-            }
-        ), error.status_code
-
-    model_operational = answer.strip().casefold() == "ok"
+def local_analysis_health():
     return jsonify(
         {
             "application": "operational",
-            "ai": {
-                "credentials_configured": True,
-                "provider_reachable": True,
-                "model_operational": model_operational,
+            "analysis": {
+                "mode": "local",
+                "available": True,
+                "external_model": False,
             },
         }
-    ), 200 if model_operational else 502
+    )
 
 
 @app.route("/api/upload-pdf", methods=["POST"])
@@ -257,7 +198,7 @@ def ask_question_route():
 @app.errorhandler(AIServiceError)
 def handle_ai_error(error: AIServiceError):
     if error.status_code >= 500:
-        logger.warning("AI request failed (code=%s)", error.code)
+        logger.warning("Local analysis failed (code=%s)", error.code)
     return jsonify({"error": str(error), "code": error.code}), error.status_code
 
 
