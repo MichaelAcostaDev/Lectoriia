@@ -708,22 +708,116 @@ const initializeAds = () => {
   });
 };
 
-document.querySelectorAll('[data-nav-target]').forEach((button) => {
+const navButtons = [...document.querySelectorAll('[data-nav-target]')];
+const desktopNav = document.querySelector('.topbar .nav');
+const mobileNav = document.querySelector('.mobile-nav');
+const mobileNavViewport = window.matchMedia('(max-width: 760px)');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const navSectionIds = [...new Set(navButtons.map((button) => button.dataset.navTarget))];
+let desktopNavVisible = true;
+let previousScrollY = window.scrollY;
+let scrollDirection = 0;
+let directionDistance = 0;
+let activeNavFrame = 0;
+
+const setMobileNavVisible = (visible) => {
+  const shouldShow = mobileNavViewport.matches && visible && !desktopNavVisible;
+  mobileNav.classList.toggle('is-visible', shouldShow);
+  mobileNav.setAttribute('aria-hidden', String(!shouldShow));
+  mobileNav.inert = !shouldShow;
+};
+
+const setActiveNavTarget = (targetId) => {
+  navButtons.forEach((button) => {
+    const active = button.dataset.navTarget === targetId;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'location');
+    else button.removeAttribute('aria-current');
+  });
+};
+
+const updateActiveNavTarget = () => {
+  activeNavFrame = 0;
+  const activationLine = window.innerHeight * 0.36;
+  const sections = navSectionIds
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  const visibleSections = sections.filter((section) => section.getBoundingClientRect().top <= activationLine);
+  const current = visibleSections[visibleSections.length - 1];
+  const next = sections.find((section) => section.getBoundingClientRect().top > activationLine);
+  setActiveNavTarget(current?.id || next?.id || sections[0]?.id);
+};
+
+const scheduleActiveNavUpdate = () => {
+  if (!activeNavFrame) activeNavFrame = window.requestAnimationFrame(updateActiveNavTarget);
+};
+
+navButtons.forEach((button) => {
   button.addEventListener('click', async () => {
-    const target = document.getElementById(button.dataset.navTarget);
-    document.querySelectorAll('[data-nav-target]').forEach((navButton) => {
-      navButton.classList.toggle('active', navButton === button);
-    });
-    if (button.dataset.navTarget === 'summary-section' || button.dataset.navTarget === 'keywords-section') {
+    const targetId = button.dataset.navTarget;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    if (targetId === 'summary-section' || targetId === 'keywords-section') {
       const ready = await ensureAnalysis();
       if (!ready) return;
     }
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    if (button.dataset.navTarget === 'question-section') {
-      window.setTimeout(() => questionInput.focus({ preventScroll: true }), 250);
+    setActiveNavTarget(targetId);
+    if (mobileNav.contains(button)) button.blur();
+    target.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'start' });
+    if (targetId === 'question-section') {
+      window.setTimeout(() => questionInput.focus({ preventScroll: true }), reducedMotion.matches ? 0 : 250);
     }
   });
 });
+
+const navVisibilityObserver = new IntersectionObserver(([entry]) => {
+  desktopNavVisible = entry.isIntersecting;
+  if (desktopNavVisible) {
+    directionDistance = 0;
+    setMobileNavVisible(false);
+  }
+}, { threshold: 0 });
+navVisibilityObserver.observe(desktopNav);
+
+window.addEventListener('scroll', () => {
+  const currentY = Math.max(0, window.scrollY);
+  const delta = currentY - previousScrollY;
+  previousScrollY = currentY;
+  scheduleActiveNavUpdate();
+
+  if (!mobileNavViewport.matches || desktopNavVisible || Math.abs(delta) < 3) return;
+  if (document.activeElement.matches('input, textarea, select')) {
+    directionDistance = 0;
+    setMobileNavVisible(false);
+    return;
+  }
+
+  const nextDirection = Math.sign(delta);
+  directionDistance = nextDirection === scrollDirection ? directionDistance + Math.abs(delta) : Math.abs(delta);
+  scrollDirection = nextDirection;
+  if (directionDistance < 14) return;
+  if (nextDirection < 0) setMobileNavVisible(true);
+  else {
+    if (mobileNav.contains(document.activeElement)) document.activeElement.blur();
+    setMobileNavVisible(false);
+  }
+}, { passive: true });
+
+window.addEventListener('resize', () => {
+  previousScrollY = window.scrollY;
+  directionDistance = 0;
+  if (!mobileNavViewport.matches) setMobileNavVisible(false);
+  scheduleActiveNavUpdate();
+});
+
+document.addEventListener('focusin', (event) => {
+  if (event.target.matches('input, textarea, select') && !mobileNav.contains(event.target)) {
+    directionDistance = 0;
+    setMobileNavVisible(false);
+  }
+});
+
+scheduleActiveNavUpdate();
 
 document.querySelectorAll('[data-repeat-analysis]').forEach((button) => {
   button.addEventListener('click', analyzeText);
