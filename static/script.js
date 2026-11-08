@@ -1,13 +1,17 @@
 const translations = {
   en: {
     navSummary: 'Summary', navKeywords: 'Keywords', navQuestions: 'Ask questions',
-    homeLabel: 'LectorIA home', navLabel: 'Document sections', workspaceLabel: 'Document analysis workspace',
+    homeLabel: 'lectoriia home', navLabel: 'Document sections', workspaceLabel: 'Document analysis workspace',
     adLabel: 'Advertisement', languageLabel: 'Interface language', eyebrow: 'Your thoughtful document reader',
     heroTitleFirst: 'Understand every', heroTitleSecond: 'document, faster.',
     heroDescription: 'Analyze PDFs and text with local, rule-based summaries, keywords, topics, and answers. No AI model or external inference service is used.',
     uploadPdf: 'Upload PDF', analyzeText: 'Analyze text', privacyShort: 'Text is processed by the app without sending it to an AI model.',
-    localModeBadge: 'Local analysis · no AI',
+    localModeBadge: 'Local text analysis · no AI models',
     privacyPolicy: 'Privacy',
+    dropZoneLabel: 'Drop a PDF here or choose a file', dropTitle: 'Drop a PDF here',
+    dropHint: 'or choose a file from your device', topicScoreHint: 'Relative match among detected topics, not a probability.',
+    topicEvidenceLabel: 'Text signals',
+    topicScoreA11y: 'Relative topic relevance score',
     sourceLabel: 'Your source', addDocument: 'Add a document', choosePdf: 'Choose PDF',
     textInputLabel: 'Document text', textPlaceholder: 'Paste text from a document here...',
     ready: 'Ready to analyze', analyzeDocument: 'Analyze document', analysisLabel: 'Your analysis',
@@ -27,7 +31,7 @@ const translations = {
     statusAnalyzed: 'Analysis complete', statusError: 'Analysis failed', statusNeedsAnalysis: 'Changes need analysis',
     statusAsking: 'Finding evidence...', statusQuestionReady: 'Answer ready', statusPdfError: 'Could not load PDF',
     keywordsProcessing: 'Extracting concepts...', retry: 'Try again', summaryLoading: 'Building a document-wide summary...',
-    placeholderAnswer: 'Your answer will appear here.', questionLabel: 'You', answerLabel: 'LectorIA',
+    placeholderAnswer: 'Your answer will appear here.', questionLabel: 'You', answerLabel: 'lectoriia',
     questionErrorLabel: 'Could not answer', referenceLabel: 'Source pages', topicNeutral: 'Other',
     alertNoText: 'Add or upload document text before analysis.', questionNoText: 'Add or upload a document before asking a question.',
     errors: {
@@ -52,13 +56,17 @@ const translations = {
   },
   es: {
     navSummary: 'Resumen', navKeywords: 'Palabras clave', navQuestions: 'Preguntas',
-    homeLabel: 'Inicio de LectorIA', navLabel: 'Secciones del documento', workspaceLabel: 'Área de análisis del documento',
+    homeLabel: 'Inicio de lectoriia', navLabel: 'Secciones del documento', workspaceLabel: 'Área de análisis del documento',
     adLabel: 'Publicidad', languageLabel: 'Idioma de la interfaz', eyebrow: 'Tu lector inteligente de documentos',
     heroTitleFirst: 'Comprende cada', heroTitleSecond: 'documento, más rápido.',
     heroDescription: 'Analiza PDF y texto con resúmenes, conceptos, temas y respuestas basados en reglas locales. No se usa un modelo de IA ni un servicio externo de inferencia.',
     uploadPdf: 'Subir PDF', analyzeText: 'Analizar texto', privacyShort: 'La aplicación procesa el texto sin enviarlo a un modelo de IA.',
-    localModeBadge: 'Análisis local · sin IA',
+    localModeBadge: 'Análisis local de texto · sin modelos de IA',
     privacyPolicy: 'Privacidad',
+    dropZoneLabel: 'Suelta un PDF aquí o elige un archivo', dropTitle: 'Suelta un PDF aquí',
+    dropHint: 'o elige un archivo de tu dispositivo', topicScoreHint: 'Coincidencia relativa entre los temas detectados, no una probabilidad.',
+    topicEvidenceLabel: 'Señales del texto',
+    topicScoreA11y: 'Puntuación relativa de relevancia temática',
     sourceLabel: 'Tu fuente', addDocument: 'Añade un documento', choosePdf: 'Elegir PDF',
     textInputLabel: 'Texto del documento', textPlaceholder: 'Pega aquí el texto de un documento...',
     ready: 'Listo para analizar', analyzeDocument: 'Analizar documento', analysisLabel: 'Tu análisis',
@@ -78,7 +86,7 @@ const translations = {
     statusAnalyzed: 'Análisis completado', statusError: 'El análisis falló', statusNeedsAnalysis: 'Hay cambios por analizar',
     statusAsking: 'Buscando evidencia...', statusQuestionReady: 'Respuesta lista', statusPdfError: 'No se pudo cargar el PDF',
     keywordsProcessing: 'Extrayendo conceptos...', retry: 'Reintentar', summaryLoading: 'Preparando el resumen del documento...',
-    placeholderAnswer: 'La respuesta aparecerá aquí.', questionLabel: 'Tú', answerLabel: 'LectorIA',
+    placeholderAnswer: 'La respuesta aparecerá aquí.', questionLabel: 'Tú', answerLabel: 'lectoriia',
     questionErrorLabel: 'No se pudo responder', referenceLabel: 'Páginas de referencia', topicNeutral: 'Otro',
     alertNoText: 'Añade o sube texto antes de analizar.', questionNoText: 'Añade o sube un documento antes de hacer una pregunta.',
     errors: {
@@ -104,7 +112,7 @@ const translations = {
 };
 
 const configNode = document.getElementById('lectoria-config');
-const appConfig = configNode ? JSON.parse(configNode.textContent) : { locale: 'en', adsense: {}, developmentAds: false };
+const appConfig = configNode ? JSON.parse(configNode.textContent) : { locale: 'en', adsense: {}, developmentAds: false, maxUploadBytes: 15 * 1024 * 1024 };
 const textInput = document.getElementById('text-input');
 const pdfInput = document.getElementById('pdf-input');
 const summaryOutput = document.getElementById('summary-output');
@@ -126,6 +134,8 @@ const analyzeButton = document.getElementById('analyze-button');
 const manualAnalyzeButton = document.getElementById('manual-analyze');
 const questionSubmit = document.getElementById('question-submit');
 const languageSelect = document.getElementById('language-select');
+const dropZone = document.getElementById('drop-zone');
+const uploadTrigger = document.getElementById('upload-trigger');
 
 let locale = 'en';
 let currentDocumentText = '';
@@ -133,6 +143,11 @@ let currentPages = null;
 let currentFileSize = 0;
 let analyzedText = '';
 let analysisPromise = null;
+let analysisPromiseText = '';
+let analysisController = null;
+let uploadController = null;
+let documentRequestId = 0;
+let questionInFlight = false;
 let currentStatusKey = 'ready';
 let latestAnalysis = null;
 let analysisErrorCode = null;
@@ -144,7 +159,7 @@ const errorText = (code) => translations[locale].errors[code] || translations.en
 
 const preferredLocale = () => {
   try {
-    const saved = localStorage.getItem('lectoria-locale');
+    const saved = localStorage.getItem('lectoriia-locale') || localStorage.getItem('lectoria-locale');
     if (saved === 'en' || saved === 'es') return saved;
   } catch (error) {
     console.warn('Could not read the saved language preference.', error);
@@ -163,10 +178,10 @@ const preferredLocale = () => {
 
 const applyTranslations = () => {
   document.documentElement.lang = locale;
-  document.title = locale === 'es' ? 'LectorIA — Análisis documental' : 'LectorIA — Document intelligence';
+  document.title = locale === 'es' ? 'lectoriia — Lectura documental, más clara' : 'lectoriia — Document reading, made clearer';
   document.querySelector('meta[name="description"]').content = locale === 'es'
-    ? 'LectorIA convierte PDF y texto en resúmenes claros, conceptos clave, temas y respuestas fundamentadas.'
-    : 'LectorIA turns PDFs and text into clear summaries, useful keywords, topic insights, and evidence-based answers.';
+    ? 'lectoriia convierte PDF y texto en resúmenes extractivos, conceptos clave, temas sugeridos y respuestas fundamentadas con procesamiento local.'
+    : 'lectoriia turns PDFs and text into extractive summaries, key concepts, topic suggestions, and evidence-based answers using local text processing.';
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     element.textContent = t(element.dataset.i18n);
   });
@@ -195,7 +210,7 @@ const setLocale = (value, remember = true) => {
   applyTranslations();
   if (remember) {
     try {
-      localStorage.setItem('lectoria-locale', locale);
+      localStorage.setItem('lectoriia-locale', locale);
     } catch (error) {
       console.warn('Could not save the language preference.', error);
     }
@@ -215,6 +230,9 @@ const setBusy = (busy, statusKey = 'statusAnalyzing') => {
   manualAnalyzeButton.disabled = busy;
   questionSubmit.disabled = busy;
   textInput.disabled = busy;
+  uploadTrigger.disabled = busy;
+  document.getElementById('pdf-button').disabled = busy;
+  dropZone.setAttribute('aria-disabled', String(busy));
   if (busy) setStatus(statusKey);
 };
 
@@ -237,6 +255,55 @@ const requestJson = async (url, options) => {
   if (!response.ok) {
     const error = new Error(data?.code ? errorText(data.code) : (data?.error || errorText('local_processing_error')));
     error.code = data.code;
+    throw error;
+  }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    const error = new Error(errorText('invalid_request'));
+    error.code = 'invalid_request';
+    throw error;
+  }
+  return data;
+};
+
+const validateAnalysis = (data) => {
+  if (
+    !data.summary || typeof data.summary.summary !== 'string'
+    || !data.keywords || !Array.isArray(data.keywords.keywords)
+    || !data.classification || !Array.isArray(data.classification.labels)
+  ) {
+    const error = new Error(errorText('invalid_request'));
+    error.code = 'invalid_request';
+    throw error;
+  }
+  data.keywords.keywords = data.keywords.keywords.filter((item) => typeof item === 'string').slice(0, 10);
+  data.classification.labels = data.classification.labels
+    .filter((item) => item && typeof item === 'object' && typeof item.label === 'string')
+    .slice(0, 3)
+    .map((item) => ({
+      label: item.label.slice(0, 80),
+      score: Number.isFinite(Number(item.score)) ? Number(item.score) : 0,
+      evidence: Array.isArray(item.evidence) ? item.evidence.filter((term) => typeof term === 'string').slice(0, 5) : [],
+    }));
+  data.summary.references = Array.isArray(data.summary.references)
+    ? data.summary.references.filter((page) => Number.isInteger(page) && page > 0)
+    : [];
+  return data;
+};
+
+const validateUpload = (data) => {
+  if (
+    typeof data.text !== 'string'
+    || !Array.isArray(data.pages)
+    || data.pages.some((page) => typeof page !== 'string')
+    || !Number.isInteger(data.page_count)
+  ) {
+    const error = new Error(errorText('invalid_request'));
+    error.code = 'invalid_request';
+    throw error;
+  }
+  if (!data.text.trim()) {
+    const error = new Error(errorText('no_extractable_text'));
+    error.code = 'no_extractable_text';
     throw error;
   }
   return data;
@@ -323,13 +390,26 @@ const renderClassification = (labels) => {
       bar.setAttribute('aria-valuemin', '0');
       bar.setAttribute('aria-valuemax', '100');
       bar.setAttribute('aria-valuenow', String(Math.round(score * 100)));
+      bar.setAttribute('aria-valuetext', `${t('topicScoreA11y')}: ${Math.round(score * 100)} / 100`);
       const fill = document.createElement('span');
       fill.className = 'score-fill';
-      fill.style.setProperty('--score', `${Math.max(3, score * 100)}%`);
+      fill.style.setProperty('--score', `${score * 100}%`);
       bar.append(fill);
       const value = document.createElement('strong');
-      value.textContent = `${Math.round(score * 100)}%`;
+      value.textContent = `${Math.round(score * 100)} / 100`;
       row.append(label, bar, value);
+      if (Array.isArray(item.evidence) && item.evidence.length) {
+        const evidence = document.createElement('small');
+        evidence.className = 'score-evidence';
+        const terms = item.evidence
+          .filter((term) => typeof term === 'string')
+          .slice(0, 5)
+          .map((term) => term.slice(0, 80));
+        if (terms.length) {
+          evidence.textContent = `${t('topicEvidenceLabel')}: ${terms.join(', ')}`;
+          row.append(evidence);
+        }
+      }
       classificationOutput.append(row);
     });
 };
@@ -393,11 +473,16 @@ const analyzeText = async () => {
     window.alert(t('alertNoText'));
     return false;
   }
-  if (analysisPromise) return analysisPromise;
-
-  analysisPromise = (async () => {
+  if (analysisPromise && analysisPromiseText === text) return analysisPromise;
+  analysisController?.abort();
+  const operationId = documentRequestId;
+  const controller = new AbortController();
+  analysisController = controller;
+  analysisPromiseText = text;
+  const promise = (async () => {
     latestAnalysis = null;
     analysisErrorCode = null;
+    analyzedText = '';
     setBusy(true);
     showSkeletons();
     try {
@@ -405,7 +490,10 @@ const analyzeText = async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, pages: currentPages }),
+        signal: controller.signal,
       });
+      if (operationId !== documentRequestId || text !== textInput.value.trim()) return false;
+      validateAnalysis(data);
       currentDocumentText = text;
       analyzedText = text;
       latestAnalysis = data;
@@ -414,8 +502,9 @@ const analyzeText = async () => {
       setStatus('statusAnalyzed');
       return true;
     } catch (error) {
+      if (operationId !== documentRequestId || error.name === 'AbortError') return false;
       latestAnalysis = null;
-      analysisErrorCode = error.code || 'provider_unavailable';
+      analysisErrorCode = error.code || 'local_processing_error';
       summaryOutput.textContent = errorText(analysisErrorCode);
       summaryOutput.classList.remove('is-loading');
       renderKeywords([]);
@@ -424,13 +513,18 @@ const analyzeText = async () => {
       setStatus('statusError');
       return false;
     } finally {
-      setBusy(false);
+      if (operationId === documentRequestId) setBusy(false);
     }
   })();
+  analysisPromise = promise;
   try {
-    return await analysisPromise;
+    return await promise;
   } finally {
-    analysisPromise = null;
+    if (analysisPromise === promise) {
+      analysisPromise = null;
+      analysisPromiseText = '';
+      if (analysisController === controller) analysisController = null;
+    }
   }
 };
 
@@ -443,6 +537,25 @@ const uploadPdf = async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
   pdfInput.value = '';
+  const isPdfName = file.name.toLowerCase().endsWith('.pdf');
+  const hasPdfType = !file.type || file.type === 'application/pdf';
+  if (!isPdfName || !hasPdfType) {
+    analysisErrorCode = 'invalid_file_type';
+    summaryOutput.textContent = errorText(analysisErrorCode);
+    setStatus('statusPdfError');
+    return;
+  }
+  if (file.size > Number(appConfig.maxUploadBytes || 0)) {
+    analysisErrorCode = 'file_too_large';
+    summaryOutput.textContent = errorText(analysisErrorCode);
+    setStatus('statusPdfError');
+    return;
+  }
+  uploadController?.abort();
+  analysisController?.abort();
+  const operationId = ++documentRequestId;
+  const controller = new AbortController();
+  uploadController = controller;
   setBusy(true, 'statusReadingPdf');
   currentDocumentText = '';
   currentPages = null;
@@ -462,10 +575,15 @@ const uploadPdf = async (event) => {
   latestAnalysis = null;
   analysisErrorCode = null;
   try {
-    const data = await requestJson('/api/upload-pdf', { method: 'POST', body: formData });
-    currentDocumentText = data.text || '';
-    currentPages = Array.isArray(data.pages) ? data.pages : null;
-    const fileName = data.file_name || file.name;
+    const data = validateUpload(await requestJson('/api/upload-pdf', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+    }));
+    if (operationId !== documentRequestId) return;
+    currentDocumentText = data.text;
+    currentPages = data.pages;
+    const fileName = typeof data.file_name === 'string' ? data.file_name.slice(0, 255) : file.name;
     currentFileSize = data.size_bytes || file.size;
     analyzedText = '';
     textInput.value = currentDocumentText;
@@ -476,16 +594,20 @@ const uploadPdf = async (event) => {
     const completed = await analyzeText();
     if (!completed) return;
   } catch (error) {
+    if (operationId !== documentRequestId || error.name === 'AbortError') return;
     setStatus('statusPdfError');
-    analysisErrorCode = error.code || 'provider_unavailable';
+    analysisErrorCode = error.code || 'local_processing_error';
     summaryOutput.textContent = errorText(analysisErrorCode);
     summaryOutput.classList.remove('is-loading');
     setBusy(false);
+  } finally {
+    if (uploadController === controller) uploadController = null;
   }
 };
 
 const submitQuestion = async (event) => {
   event.preventDefault();
+  if (questionInFlight) return;
   const question = questionInput.value.trim();
   const context = (currentDocumentText || textInput.value).trim();
   if (!context) {
@@ -501,7 +623,11 @@ const submitQuestion = async (event) => {
   const priorConversation = conversation.slice(-8).map(({ role, content }) => ({ role, content }));
   const userMessage = { role: 'user', content: question };
   const pendingMessage = { role: 'assistant', pending: true, content: '' };
+  questionInFlight = true;
   renderedMessages.push(userMessage, pendingMessage);
+  renderedMessages = renderedMessages.slice(-24);
+  conversation.push(userMessage);
+  conversation = conversation.slice(-8);
   renderChatHistory();
   questionInput.value = '';
   setBusy(true, 'statusAsking');
@@ -516,19 +642,28 @@ const submitQuestion = async (event) => {
         history: priorConversation,
       }),
     });
+    if (typeof data.answer !== 'string') {
+      const error = new Error(errorText('invalid_request'));
+      error.code = 'invalid_request';
+      throw error;
+    }
     pendingMessage.pending = false;
     pendingMessage.content = data.answer || t('placeholderAnswer');
-    pendingMessage.references = data.references || [];
-    conversation.push(userMessage, { role: 'assistant', content: pendingMessage.content });
+    pendingMessage.references = Array.isArray(data.references)
+      ? data.references.filter((page) => Number.isInteger(page) && page > 0)
+      : [];
+    conversation.push({ role: 'assistant', content: pendingMessage.content });
+    conversation = conversation.slice(-8);
     setStatus('statusQuestionReady');
   } catch (error) {
     pendingMessage.pending = false;
     pendingMessage.error = true;
-    pendingMessage.code = error.code || 'provider_unavailable';
+    pendingMessage.code = error.code || 'local_processing_error';
     pendingMessage.content = errorText(pendingMessage.code);
     setStatus('statusError');
   } finally {
     renderChatHistory();
+    questionInFlight = false;
     setBusy(false);
   }
 };
@@ -596,6 +731,29 @@ document.querySelectorAll('[data-repeat-analysis]').forEach((button) => {
 
 document.getElementById('upload-trigger').addEventListener('click', () => pdfInput.click());
 document.getElementById('pdf-button').addEventListener('click', () => pdfInput.click());
+dropZone.addEventListener('click', () => {
+  if (dropZone.getAttribute('aria-disabled') !== 'true') pdfInput.click();
+});
+dropZone.addEventListener('keydown', (event) => {
+  if ((event.key === 'Enter' || event.key === ' ') && dropZone.getAttribute('aria-disabled') !== 'true') {
+    event.preventDefault();
+    pdfInput.click();
+  }
+});
+dropZone.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  if (dropZone.getAttribute('aria-disabled') !== 'true') dropZone.classList.add('is-dragging');
+});
+dropZone.addEventListener('dragleave', (event) => {
+  if (!dropZone.contains(event.relatedTarget)) dropZone.classList.remove('is-dragging');
+});
+dropZone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  dropZone.classList.remove('is-dragging');
+  if (dropZone.getAttribute('aria-disabled') === 'true') return;
+  const file = [...(event.dataTransfer?.files || [])].find((item) => item.name.toLowerCase().endsWith('.pdf'));
+  if (file) uploadPdf({ target: { files: [file] } });
+});
 analyzeButton.addEventListener('click', analyzeText);
 manualAnalyzeButton.addEventListener('click', () => {
   analyzeText();
@@ -606,9 +764,11 @@ languageSelect.addEventListener('change', () => setLocale(languageSelect.value))
 textInput.addEventListener('input', () => {
   const nextText = textInput.value.trim();
   if (nextText !== currentDocumentText) {
+    documentRequestId += 1;
+    analysisController?.abort();
+    uploadController?.abort();
     currentDocumentText = nextText;
     currentPages = null;
-    currentFileName = '';
     analyzedText = '';
     docFile.textContent = t('noDocument');
     docPages.textContent = '0';
