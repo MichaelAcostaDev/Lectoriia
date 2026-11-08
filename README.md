@@ -1,67 +1,85 @@
 <div align="center">
-  <img src="static/logo-mark.svg" width="104" alt="LectorIA logo">
+  <img src="static/logo-mark.svg" width="104" alt="Símbolo de LectorIA">
 
-  # LectorIA
+  <h1>LectorIA</h1>
 
-  **Read less noise. Understand more.**
+  <p><strong>Menos ruido. Más comprensión.</strong></p>
 
-  Bilingual local analysis for PDFs and plain text, with no AI model.
+  <p>
+    Una forma más clara y tranquila de acercarte a tus documentos.<br>
+    Sube un PDF o pega un texto: encuentra sus ideas, explora sus temas y vuelve a la fuente cuando quieras.
+  </p>
 
-  [Live site](https://lectoriia.vercel.app/) · [Source code](https://github.com/MichaelAcostaDev/LectorIA)
+  <p>
+    <a href="https://lectoriia.vercel.app/"><strong>Abrir LectorIA →</strong></a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/MichaelAcostaDev/LectorIA">Código abierto</a>
+    &nbsp;·&nbsp;
+    <a href="/privacy">Privacidad</a>
+  </p>
 
-  ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-  ![Flask](https://img.shields.io/badge/Flask-3.1-black?logo=flask)
-  ![License](https://img.shields.io/badge/License-MIT-blue.svg)
+  <p>
+    <img src="https://img.shields.io/badge/Sin-IA%20externa-3977A8?style=flat-square" alt="Sin inteligencia artificial externa">
+    <img src="https://img.shields.io/badge/Idiomas-español%20%2B%20inglés-3977A8?style=flat-square" alt="Español e inglés">
+    <img src="https://img.shields.io/badge/Licencia-MIT-3977A8?style=flat-square" alt="Licencia MIT">
+  </p>
 </div>
 
-## Overview
+<br>
 
-LectorIA converts a PDF or pasted text into an extractive summary, frequent key terms, rule-based thematic labels, and answers selected from matching sentences with page references when available. The interface supports English and Spanish.
+## Leer un documento no debería sentirse como buscar una aguja en un pajar
 
-Analysis runs in the Flask application using deterministic text-processing rules. It does not load or call an AI model and does not send document text to an inference provider. Results are extractive and heuristic; they are not generated or interpreted by AI. Scanned PDFs without an extractable text layer are not OCR-processed.
+Informes extensos, materiales de estudio y textos llenos de detalles pueden hacer difícil encontrar lo esencial. **LectorIA** reúne en una sola página una vista práctica del documento: un resumen de sus frases relevantes, conceptos frecuentes, temas posibles y respuestas que apuntan a fragmentos del texto.
 
-## Features
+La experiencia está pensada para ser sencilla: añade un documento, analiza y consulta. La interfaz está disponible en español e inglés.
 
-- Analyze PDFs and pasted text locally with chunking for longer documents.
-- Extract frequent terms and classify topics with bilingual keyword rules.
-- Answer questions by retrieving sentences that share words with the question.
-- Preserve PDF page numbers for references where available.
-- Switch between English and Spanish, with browser-language detection.
-- Serve optional AdSense Auto ads or configured manual slots.
-- Process PDF uploads temporarily; the app does not intentionally retain documents or analyses.
-- Use a responsive interface with reduced-motion support.
+## Una lectura más enfocada
 
-## Architecture
+| | |
+|:--|:--|
+| **Resumen** | Selecciona frases del documento para ofrecer una vista breve de sus ideas. |
+| **Conceptos clave** | Destaca palabras y expresiones frecuentes que pueden ayudar a orientarse en el contenido. |
+| **Temas** | Sugiere categorías temáticas mediante vocabulario asociado a cada tema. |
+| **Preguntas** | Busca frases que comparten términos con la pregunta y muestra las páginas de origen cuando están disponibles. |
+| **PDF y texto** | Permite cargar un PDF con texto seleccionable o pegar contenido directamente. |
+| **Español e inglés** | Ofrece una interfaz bilingüe y detecta el idioma del texto de forma aproximada. |
 
-```mermaid
-flowchart LR
-    Browser[Browser: bilingual UI] -->|PDF or text| Flask[Flask application]
-    Flask -->|PDF upload| Temp[Temporary file extraction]
-    Temp -->|Extracted text| Flask
-    Flask -->|Local rules: summary, keywords, topics, answers| Flask
-    Flask -->|Results| Browser
-    Browser -->|Optional ads| Google[Google AdSense]
-```
+## Sin modelos de IA ni llamadas a proveedores de inferencia
 
-Documents are processed by the application server and are not sent to an AI model. The hosting provider may process requests and technical logs according to its own terms.
+LectorIA utiliza **reglas de procesamiento de texto en el servidor**. No requiere claves de API, no descarga modelos y no envía el texto del documento a un servicio de IA.
 
-## Privacy and security
+Eso también define lo que ofrece: los resúmenes y respuestas se construyen seleccionando texto existente; las palabras clave y categorías se calculan con reglas. **No es una IA generativa** y no interpreta el documento como lo haría una persona.
 
-- Analysis does not use or require AI-provider tokens.
-- Uploaded PDFs are size-checked and temporarily written for text extraction, then deleted. Extracted text is processed by the application server and is not sent to an AI model or inference provider.
-- If AdSense is enabled, Google and its partners may use cookies or similar technologies. Configure a certified consent platform where required.
-- Use the [privacy page](/privacy) for the service's current processing disclosures. Configure `PRIVACY_CONTACT_EMAIL` before public launch.
-- Do not put credentials, real documents, or private user data in issues, logs, screenshots, or pull requests. Report security issues privately to the repository owner.
+## Diseñada para volver a la fuente
 
-## Contributing
+Una respuesta útil no debería separarse de aquello que la sustenta. Cuando el texto extraído conserva la paginación, LectorIA muestra referencias a las páginas correspondientes. Las preguntas se responden con frases encontradas en el documento; si no encuentra coincidencias suficientes, indica que no dispone de evidencia suficiente en lugar de inventar una respuesta.
 
-1. Fork the repository and create a focused branch.
-2. Make changes and add or update tests.
-3. Run the test suite above.
-4. Open a pull request describing behavior and deployment implications.
+## Privacidad, explicada con claridad
 
-Avoid including real documents, API tokens, publisher IDs, or other sensitive data in contributions.
+- Los PDF se reciben para extraer su texto y se procesan temporalmente en el servidor.
+- El contenido no se envía a un modelo ni a un proveedor de inferencia.
+- LectorIA no mantiene una biblioteca de documentos ni guarda deliberadamente los análisis.
+- El proveedor de alojamiento puede procesar solicitudes y generar registros técnicos conforme a sus propias políticas.
+- Si se habilita publicidad, los servicios publicitarios pueden utilizar sus propias tecnologías y políticas.
 
-## License
+Consulta la [política de privacidad](https://lectoriia.vercel.app/privacy) antes de utilizar el servicio. Evita subir información sensible o confidencial.
 
-LectorIA's code is released under the [MIT License](./LICENSE). Hosting and third-party assets remain subject to their own terms and licenses.
+## Una herramienta práctica, con límites honestos
+
+- Los PDF escaneados sin una capa de texto legible no se convierten mediante OCR.
+- La calidad del resumen, las palabras clave y las respuestas depende del texto extraído y de las reglas; puede variar, y conviene contrastar los resultados con el documento.
+- Las referencias de página solo aparecen cuando la extracción permite conservarlas.
+- El análisis no tiene cargos por inferencia, pero el alojamiento puede aplicar límites de tamaño, tiempo o uso.
+
+## Una invitación
+
+LectorIA busca hacer más fácil el primer recorrido por un documento: reconocer de qué habla, encontrar términos importantes y regresar a los pasajes que merecen una lectura más atenta.
+
+<div align="center">
+  <p><a href="https://lectoriia.vercel.app/"><strong>Prueba LectorIA con tu próximo documento →</strong></a></p>
+  <p><sub>Hecha para leer con más claridad.</sub></p>
+</div>
+
+---
+
+LectorIA se distribuye bajo la licencia [MIT](LICENSE).
