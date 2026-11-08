@@ -81,6 +81,15 @@ class FlaskRoutesTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'<html lang="es">', response.data)
 
+    def test_mobile_navigation_is_inert_until_revealed_and_shares_sections(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'class="mobile-nav"', response.data)
+        self.assertIn(b'aria-hidden="true" inert', response.data)
+        for section in (b"summary-section", b"keywords-section", b"question-section"):
+            self.assertEqual(response.data.count(b'data-nav-target="' + section + b'"'), 2)
+
     def test_adsense_defaults_to_configured_publisher_and_auto_ads(self):
         with patch.dict(os.environ, {}, clear=True):
             home = self.client.get("/")
