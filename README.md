@@ -110,7 +110,7 @@ Copy `.env.example` to `.env` for local development. Configure production variab
 | Variable | Required | Description |
 | --- | --- | --- |
 | `HUGGINGFACE_API_TOKEN` | For AI | Fine-grained Hugging Face token with Inference Providers permission. Keep it server-side. |
-| `HF_CHAT_MODEL` | No | Chat-completion model ID. Defaults to `Qwen/Qwen2.5-7B-Instruct-1M`. |
+| `HF_CHAT_MODEL` | No | Chat-completion model ID. Defaults to `Qwen/Qwen2.5-7B-Instruct`. |
 | `PORT` | No | Local Flask port; defaults to `5000`. |
 | `FLASK_DEBUG` | No | Set to `true` only for local development. |
 | `ADSENSE_PUBLISHER_ID` | For ads | Approved publisher ID, in `pub-…` or `ca-pub-…` format. |
@@ -135,7 +135,7 @@ Ad slots can be left blank. In local development, unconfigured locations show la
 ### Vercel
 
 1. Import the repository into Vercel and retain the included Python build and catch-all route configuration.
-2. Set `HUGGINGFACE_API_TOKEN` in the Vercel project's server-side environment variables. Set `HF_CHAT_MODEL` only if you want to override the default.
+2. Set `HUGGINGFACE_API_TOKEN` in the Vercel project's server-side environment variables. Set `HF_CHAT_MODEL` only if you want to override the default. If a deployment already has `HF_CHAT_MODEL` configured and reports that the model is unavailable, update it to `Qwen/Qwen2.5-7B-Instruct` or remove the override, then redeploy.
 3. Deploy, then check `/api/health`. To test actual inference, call `/api/health/ai` from a trusted environment with the bearer token; this makes a provider request and is not a public uptime probe.
 4. Before serving ads, obtain AdSense approval. Configure `ADSENSE_PUBLISHER_ID`, optionally `ADSENSE_AUTO_ADS=true`, and any manual slot IDs, then redeploy.
 5. Configure Google AdSense privacy and consent messaging. Google requires an approved Google-certified consent management platform for applicable users in the EEA, UK, and Switzerland. This application does not implement a CMP.

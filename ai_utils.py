@@ -11,7 +11,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 DEFAULT_CHAT_MODEL = os.getenv(
-    "HF_CHAT_MODEL", "Qwen/Qwen2.5-7B-Instruct-1M"
+    "HF_CHAT_MODEL", "Qwen/Qwen2.5-7B-Instruct"
 )
 HF_CHAT_COMPLETIONS_URL = "https://router.huggingface.co/v1/chat/completions"
 MAX_DOCUMENT_CHARS = 180_000
