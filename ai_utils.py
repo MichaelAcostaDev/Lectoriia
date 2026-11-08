@@ -41,6 +41,14 @@ ENGLISH_STOPWORDS = {
 STOPWORDS = SPANISH_STOPWORDS | ENGLISH_STOPWORDS
 WORD_PATTERN = re.compile(r"[a-záéíóúñü0-9]+", re.IGNORECASE)
 SENTENCE_PATTERN = re.compile(r"(?<=[.!?])\s+|\n+")
+DEFINITION_PREDICATE_PATTERN = re.compile(
+    r"\b(?:is|are|means|refers to|defined as|consists of|es|son|significa|"
+    r"se define como|se refiere a|consiste en)\b"
+)
+LISTING_SUBJECT_PATTERN = re.compile(
+    r"\b(?:types?|kinds?|categories?|forms?|tipos?|clases?|categorias?|modalidades?)"
+    r"\s+(?:of|de)\b"
+)
 
 
 def _canonical_token(token: str) -> str:
@@ -651,6 +659,7 @@ def _rank_chunks_for_question(
                 expanded_query.setdefault(_stem_token(synonym), 0.45)
 
     intent = _question_intent(question)
+    focus_terms = set(query_tokens)
     scored: list[tuple[float, int, dict[str, Any]]] = []
     for item in index["chunks"]:
         frequency = item["frequencies"]
@@ -668,6 +677,12 @@ def _rank_chunks_for_question(
                 1 - 0.75 + 0.75 * length / max(1, index["average_length"])
             )
             score += query_weight * inverse_frequency * (term_frequency * 2.2 / denominator)
+        if intent == "definition":
+            if any(
+                _is_definition_evidence(sentence, focus_terms)
+                for sentence in SENTENCE_PATTERN.split(item["chunk"]["text"])
+            ):
+                score += 1.5
         if intent == "date" and re.search(
             r"\b(?:1[5-9]\d{2}|20\d{2}|21\d{2})\b", item["chunk"]["text"]
         ):
@@ -765,10 +780,21 @@ def _question_intent(question: str) -> str:
         return "cause"
     if re.search(r"\b(compare|difference|contrast|comparar|diferencia|contrastar)\b", normalized):
         return "comparison"
-    if re.search(r"\b(define|definition|meaning|definicion|significa)\b", normalized):
-        return "definition"
-    if re.search(r"\b(list|name|enumerate|lista|nombra|enumera)\b", normalized):
+    if re.search(
+        r"\b(list|name|enumerate|lista|nombra|enumera)\b"
+        r"|\bwhat\s+(?:are|is)\s+(?:the\s+)?(?:types?|kinds?|categories?|forms?)\s+of\b"
+        r"|\b(?:que|cuales)\s+son\s+(?:los\s+|las\s+)?"
+        r"(?:tipos?|clases?|categorias?|modalidades?)\s+de\b",
+        normalized,
+    ):
         return "list"
+    if re.search(
+        r"\b(define|definition|meaning|definicion|significa|significado)\b"
+        r"|\bwhat\s+(?:is|are)\b|\bwhat\s+does\b.*\bmean\b"
+        r"|\bque\s+(?:es|son|significa)\b|\bque\s+se\s+entiende\s+por\b",
+        normalized,
+    ):
+        return "definition"
     return "explanation"
 
 
@@ -780,8 +806,27 @@ def _intent_terms(intent: str) -> tuple[str, ...]:
         "cause": ("cause", "reason", "because", "causa", "motivo"),
         "comparison": ("compare", "difference", "contrast", "comparar", "diferencia"),
         "definition": ("definition", "meaning", "definition", "definición", "significado"),
-        "list": ("list", "items", "lista", "elementos"),
+        "list": (
+            "list", "items", "type", "kind", "category", "form", "lista",
+            "elemento", "tipo", "clase", "categoria", "modalidad",
+        ),
     }.get(intent, ())
+
+
+def _is_definition_evidence(sentence: str, focus_terms: set[str]) -> bool:
+    if not focus_terms:
+        return False
+    focus_stems = {_stem_token(term) for term in focus_terms}
+    canonical_sentence = _canonical_token(sentence)
+    for predicate in DEFINITION_PREDICATE_PATTERN.finditer(canonical_sentence):
+        subject = canonical_sentence[:predicate.start()]
+        subject_terms = {_stem_token(term) for term in _content_tokens(subject)}
+        if (
+            focus_stems & subject_terms
+            and not LISTING_SUBJECT_PATTERN.search(_canonical_token(subject))
+        ):
+            return True
+    return False
 
 
 def _sentence_relevance(
@@ -789,6 +834,7 @@ def _sentence_relevance(
     query: Counter[str],
     document_index: dict[str, Any],
     intent: str,
+    focus_terms: set[str] | None = None,
 ) -> float:
     tokens = _content_tokens(sentence)
     frequencies = Counter(tokens)
@@ -810,10 +856,8 @@ def _sentence_relevance(
         lowered,
     ):
         score += 0.4
-    if intent == "definition" and re.search(
-        r"\b(is|are|means|refers to|es|son|significa|se define)\b", lowered
-    ):
-        score += 0.2
+    if intent == "definition" and _is_definition_evidence(sentence, focus_terms or set()):
+        score += 1.5
     return score
 
 
@@ -866,6 +910,7 @@ def answer_question(
             for term in _intent_terms(intent)
         }
     )
+    focus_terms = set(question_tokens)
     for token in set(question_tokens):
         group = SYNONYM_LOOKUP.get(token)
         if group:
@@ -888,6 +933,7 @@ def answer_question(
                 expanded_query,
                 document_index,
                 intent,
+                focus_terms,
             )
             if score > 0:
                 sentence_matches.append(
@@ -916,7 +962,7 @@ def answer_question(
 
     selected_sentences: list[dict[str, Any]] = []
     remaining = sorted(sentence_matches, key=lambda item: (-item["score"], item["position"]))
-    target_count = 2 if intent == "comparison" else 3
+    target_count = 1 if intent == "definition" else 2 if intent == "comparison" else 3
     while remaining and len(selected_sentences) < target_count:
         best_index = max(
             range(len(remaining)),

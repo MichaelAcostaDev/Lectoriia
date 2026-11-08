@@ -152,6 +152,80 @@ class LocalAnalysisTests(unittest.TestCase):
         self.assertEqual(result["references"], [2])
         self.assertEqual(result["answer_type"], "extractive")
 
+    def test_definition_question_prefers_meaning_over_types_in_english_and_spanish(self):
+        examples = [
+            (
+                "What is a backup?",
+                "A backup is a copy of important files that can be restored after loss or damage. "
+                "The main types of backup are full, incremental, and differential backups.",
+                "A backup is a copy",
+                "types of backup",
+            ),
+            (
+                "¿Qué es un respaldo?",
+                "Un respaldo es una copia de archivos importantes que se puede restaurar "
+                "después de una pérdida o daño. Los principales tipos de respaldo son "
+                "completo, incremental y diferencial.",
+                "Un respaldo es una copia",
+                "tipos de respaldo",
+            ),
+        ]
+
+        for question, document, definition, types in examples:
+            with self.subTest(question=question):
+                result = ai_utils.answer_question(question, document)
+
+                self.assertIn(definition, result["answer"])
+                self.assertNotIn(types, result["answer"])
+
+    def test_question_about_types_is_treated_as_a_list_request(self):
+        examples = [
+            (
+                "What are the types of backup?",
+                "A backup is a copy of important files. The main types of backup are full, "
+                "incremental, and differential backups.",
+                "types of backup",
+            ),
+            (
+                "¿Cuáles son los tipos de respaldo?",
+                "Un respaldo es una copia de archivos importantes. Los tipos de respaldo son "
+                "completo, incremental y diferencial.",
+                "tipos de respaldo",
+            ),
+        ]
+        for question, document, expected in examples:
+            with self.subTest(question=question):
+                result = ai_utils.answer_question(question, document)
+
+                self.assertIn(expected, result["answer"])
+
+    def test_definition_retrieves_its_chunk_from_list_heavy_pages(self):
+        examples = [
+            (
+                "What is a backup?",
+                ["The main types of backup are full, incremental, and differential backups."] * 4
+                + ["A backup is a copy of important files that can be restored after loss or damage."],
+                "A backup is a copy",
+            ),
+            (
+                "¿Qué es un respaldo?",
+                [
+                    "Los tipos de respaldo incluyen los métodos completo, incremental y diferencial."
+                ] * 4
+                + [
+                    "Un respaldo es una copia de archivos importantes que se puede restaurar "
+                    "después de una pérdida o daño."
+                ],
+                "Un respaldo es una copia",
+            ),
+        ]
+        for question, pages, definition in examples:
+            with self.subTest(question=question):
+                result = ai_utils.answer_question(question, "", pages=pages)
+
+                self.assertIn(definition, result["answer"])
+                self.assertEqual(result["references"], [5])
+
     def test_question_uses_conversation_context_for_follow_up(self):
         result = ai_utils.answer_question(
             "Can you explain that further?",
