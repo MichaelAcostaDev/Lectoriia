@@ -536,7 +536,7 @@ const submitQuestion = async (event) => {
 const initializeAds = () => {
   if (initializeAds.initialized) return;
   initializeAds.initialized = true;
-  const { publisherId, slots = {}, autoAds = false } = appConfig.adsense || {};
+  const { publisherId, slots = {} } = appConfig.adsense || {};
   const validPublisher = /^ca-pub-\d+$/.test(publisherId || '');
   let hasManualAd = false;
   document.querySelectorAll('.ad-unit').forEach((container) => {
@@ -560,32 +560,17 @@ const initializeAds = () => {
       container.hidden = true;
     }
   });
-  if (!validPublisher || (!autoAds && !hasManualAd)) return;
+  if (!validPublisher || !hasManualAd) return;
 
-  const existingScript = document.querySelector(
-    'script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]'
-  );
-  if (existingScript) return;
-
-  const script = document.createElement('script');
-  script.async = true;
-  script.crossOrigin = 'anonymous';
-  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(publisherId)}`;
-  script.onload = () => {
-    document.querySelectorAll('.adsbygoogle').forEach((ad) => {
-      if (ad.dataset.initialized) return;
-      ad.dataset.initialized = 'true';
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (error) {
-        console.error('AdSense could not initialize an ad slot.', error);
-      }
-    });
-  };
-  script.onerror = () => {
-    console.error('The AdSense library could not be loaded.');
-  };
-  document.head.append(script);
+  document.querySelectorAll('.adsbygoogle').forEach((ad) => {
+    if (ad.dataset.initialized) return;
+    ad.dataset.initialized = 'true';
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (error) {
+      console.error('AdSense could not initialize an ad slot.', error);
+    }
+  });
 };
 
 document.querySelectorAll('[data-nav-target]').forEach((button) => {

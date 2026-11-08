@@ -68,6 +68,12 @@ class FlaskRoutesTests(unittest.TestCase):
         self.assertIn(b'"publisherId": "ca-pub-9460130837910562"', home.data)
         self.assertIn(b'"autoAds": true', home.data)
         self.assertIn(
+            b'src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9460130837910562"',
+            home.data,
+        )
+        self.assertIn(b'crossorigin="anonymous"', home.data)
+        self.assertEqual(home.data.count(b"pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"), 1)
+        self.assertIn(
             b"google.com, pub-9460130837910562, DIRECT, f08c47fec0942fa0",
             ads_txt.data,
         )
@@ -105,6 +111,10 @@ class FlaskRoutesTests(unittest.TestCase):
 
         self.assertIn(b"ca-pub-1234567890123456", home.data)
         self.assertIn(
+            b"adsbygoogle.js?client=ca-pub-1234567890123456",
+            home.data,
+        )
+        self.assertIn(
             b"google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0",
             ads_txt.data,
         )
@@ -127,6 +137,22 @@ class FlaskRoutesTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'"autoAds": true', response.data)
+
+    def test_auto_ads_script_is_omitted_when_disabled_without_manual_slots(self):
+        with patch.dict(
+            os.environ,
+            {
+                "ADSENSE_PUBLISHER_ID": "ca-pub-1234567890123456",
+                "ADSENSE_AUTO_ADS": "false",
+                "ADSENSE_SLOT_HERO": "",
+                "ADSENSE_SLOT_MIDDLE": "",
+                "ADSENSE_SLOT_SIDEBAR": "",
+                "ADSENSE_SLOT_FOOTER": "",
+            },
+        ):
+            response = self.client.get("/")
+
+        self.assertNotIn(b"pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", response.data)
 
     def test_privacy_page_is_bilingual_and_contact_is_optional(self):
         with patch.dict(os.environ, {"PRIVACY_CONTACT_EMAIL": ""}):
