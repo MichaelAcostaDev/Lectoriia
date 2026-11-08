@@ -29,6 +29,22 @@ class DocumentChunkingTests(unittest.TestCase):
         self.assertEqual(error.exception.code, "document_too_large")
         self.assertEqual(error.exception.status_code, 413)
 
+    def test_long_manual_over_previous_limits_is_accepted(self):
+        pages = ["Driving rules " * 400] * 33
+
+        chunks = ai_utils.chunk_document("", pages=pages)
+
+        self.assertEqual(len(chunks), 33)
+        self.assertGreater(sum(len(page) for page in pages), 180_000)
+
+    def test_chunk_count_limit_is_enforced(self):
+        with patch.object(ai_utils, "MAX_DOCUMENT_CHUNKS", 2):
+            with self.assertRaises(ai_utils.AIServiceError) as error:
+                ai_utils.chunk_document("", pages=["First page", "Second page", "Third page"])
+
+        self.assertEqual(error.exception.code, "document_too_large")
+        self.assertEqual(error.exception.status_code, 413)
+
     def test_extracts_page_markers_from_legacy_document_text(self):
         chunks = ai_utils.chunk_document("[Página 2] Second page.\n[Página 3] Third page.")
 

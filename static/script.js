@@ -32,7 +32,7 @@ const translations = {
     alertNoText: 'Add or upload document text before analysis.', questionNoText: 'Add or upload a document before asking a question.',
     errors: {
       local_processing_error: 'Local analysis could not complete. Please retry.',
-      document_too_large: 'This document exceeds the current analysis limit. Split it into smaller documents and retry.',
+      document_too_large: 'This document exceeds the 500,000-character or 512-section analysis limit. Split it into smaller documents and retry.',
       empty_document: 'No readable document text was provided.',
       empty_question: 'Write a question before consulting the document.',
       invalid_request: 'The request data is invalid.',
@@ -83,7 +83,7 @@ const translations = {
     alertNoText: 'Añade o sube texto antes de analizar.', questionNoText: 'Añade o sube un documento antes de hacer una pregunta.',
     errors: {
       local_processing_error: 'El análisis local no pudo completarse. Inténtalo de nuevo.',
-      document_too_large: 'El documento supera el límite de análisis actual. Divídelo en documentos más pequeños.',
+      document_too_large: 'El documento supera el límite de 500 000 caracteres o 512 secciones. Divídelo en documentos más pequeños.',
       empty_document: 'No se proporcionó texto legible para analizar.',
       empty_question: 'Escribe una pregunta antes de consultar el documento.',
       invalid_request: 'Los datos de la solicitud no son válidos.',

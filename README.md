@@ -104,7 +104,7 @@ The hosting provider may process requests and technical logs under its own terms
 | Find passages that share words with your question. | A wording mismatch can hide relevant evidence; answers may be incomplete. |
 | Show page references when the PDF text extraction preserves them. | Scanned or image-only PDFs are not OCR-processed. |
 
-Analysis has no inference-provider fee. The application and its hosting still have size, time, and usage limits.
+Text analysis supports documents up to **500,000 characters and 512 sections**, enough for many long manuals. Analysis has no inference-provider fee, though the application and its hosting still have upload-size, execution-time, and usage limits.
 
 <br>
 
