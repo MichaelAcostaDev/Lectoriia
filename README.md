@@ -124,6 +124,15 @@ lectoriia is here to make the first step easier: to help you see the shape of a 
 
 ---
 
+## Analysis limits and deployment notes
+
+Text analysis is capped at **500,000 characters and 512 chunks**. PDF upload size is capped by the server configuration (15 MB locally and 4 MB on Vercel). Scanned/image-only PDFs are not OCR-processed. Summary and keyword extraction are statistical and extractive; category scores are relative heuristic relevance, not calibrated confidence.
+
+The retrieval index exists only while a question request is being handled. It is built once per request and reused for chunk and sentence ranking; it is not cached across requests because Vercel workers may be short-lived or reused unpredictably. The browser sends the current document for each question, so no database or persistent document storage is needed.
+
+
+---
+
 <div align="center">
   <sub>
     lectoriia is open source under the <a href="LICENSE">MIT License</a>.
@@ -131,28 +140,3 @@ lectoriia is here to make the first step easier: to help you see the shape of a 
     <a href="https://github.com/MichaelAcostaDev/LectorIA">View the project on GitHub</a>
   </sub>
 </div>
-
-## Run locally
-
-The application uses Flask, vanilla JavaScript/CSS, and `pypdf`. All document analysis runs in Python on the application server; there is no model download, database, inference API, or analysis credential.
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
-```
-
-Open `http://localhost:5000`. The interface supports English and Spanish. Copy `.env.example` to `.env` only if you need to change local configuration; AdSense and the privacy contact are optional configuration, not document-analysis dependencies.
-
-Run the test suite with:
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-## Analysis limits and deployment notes
-
-Text analysis is capped at **500,000 characters and 512 chunks**. PDF upload size is capped by the server configuration (15 MB locally and 4 MB on Vercel). Scanned/image-only PDFs are not OCR-processed. Summary and keyword extraction are statistical and extractive; category scores are relative heuristic relevance, not calibrated confidence.
-
-The retrieval index exists only while a question request is being handled. It is built once per request and reused for chunk and sentence ranking; it is not cached across requests because Vercel workers may be short-lived or reused unpredictably. The browser sends the current document for each question, so no database or persistent document storage is needed.
