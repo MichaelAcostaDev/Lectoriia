@@ -108,6 +108,15 @@ Text analysis supports documents up to **500,000 characters and 512 sections**, 
 
 <br>
 
+
+## Analysis limits and deployment notes
+
+Text analysis is capped at **500,000 characters and 512 chunks**. PDF upload size is capped by the server configuration (15 MB locally and 4 MB on Vercel). Scanned/image-only PDFs are not OCR-processed. Summary and keyword extraction are statistical and extractive; category scores are relative heuristic relevance, not calibrated confidence.
+
+The retrieval index exists only while a question request is being handled. It is built once per request and reused for chunk and sentence ranking; it is not cached across requests because Vercel workers may be short-lived or reused unpredictably. The browser sends the current document for each question, so no database or persistent document storage is needed.
+
+---
+
 ## For the moments when a document feels too dense
 
 lectoriia is here to make the first step easier: to help you see the shape of a text, notice what keeps returning, and find the passages worth reading more closely.
@@ -121,15 +130,6 @@ lectoriia is here to make the first step easier: to help you see the shape of a 
   <sub>Made for clearer reading.</sub>
   <br><br>
 </div>
-
----
-
-## Analysis limits and deployment notes
-
-Text analysis is capped at **500,000 characters and 512 chunks**. PDF upload size is capped by the server configuration (15 MB locally and 4 MB on Vercel). Scanned/image-only PDFs are not OCR-processed. Summary and keyword extraction are statistical and extractive; category scores are relative heuristic relevance, not calibrated confidence.
-
-The retrieval index exists only while a question request is being handled. It is built once per request and reused for chunk and sentence ranking; it is not cached across requests because Vercel workers may be short-lived or reused unpredictably. The browser sends the current document for each question, so no database or persistent document storage is needed.
-
 
 ---
 
